@@ -40,7 +40,7 @@ registered_models = [
     "PyramidNet272",
 ]
 
-registered_datasets = ["CIFAR10", "CIFAR100", "Imagenet"]
+registered_datasets = ["CIFAR10", "CIFAR100", "Imagenet", "Acevedo", "Matek", "AcevedoMatek"]
 
 
 def get_model(model_name, params):

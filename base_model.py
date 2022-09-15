@@ -19,6 +19,8 @@ from madgrad import MADGRAD
 from timm.optim import RMSpropTF
 from augmentation.mixup import mixup_data, mixup_criterion
 
+from datasets.hematology_data import HematologyDataset
+
 
 class BaseModel(pl.LightningModule):
     def __init__(self, hypparams):
@@ -152,6 +154,13 @@ class BaseModel(pl.LightningModule):
                 self.transform_train = get_rand_augmentation(self.mean, self.std)
 
             self.test_transform = test_transform(self.mean, self.std)
+
+        elif self.dataset in ["Acevedo", "Matek", "AcevedoMatek"]:
+            from augmentation.policies.hematology import get_starter_test, get_starter_train
+
+            if self.aug == "starter":
+                self.transform_train = get_starter_train()
+                self.test_transform = get_starter_test()
 
         ################################################################################################################
 
@@ -450,9 +459,33 @@ class BaseModel(pl.LightningModule):
 
         elif self.dataset == "Imagenet":
 
-            # path_to_imagenet = "/mnt/de2aec88-1b8c-41ee-9977-13e3c6e297a9/imagenet/original" TODO
-
             trainset = ImageNet(root=self.data_dir, split="train", transform=self.transform_train)
+
+        elif self.dataset == "Acevedo":
+            trainset = HematologyDataset(
+                data_dir=self.data_dir,
+                set="acevedo",
+                train=True,
+                transform=self.transform_train,
+                split_file=os.path.join(self.data_dir, "splits.json"),
+            )
+
+        elif self.dataset == "Matek":
+            trainset = HematologyDataset(
+                data_dir=self.data_dir,
+                set="matek",
+                train=True,
+                transform=self.transform_train,
+                split_file=os.path.join(self.data_dir, "splits.json"),
+            )
+        elif self.dataset == "AcevedoMatek":
+            trainset = HematologyDataset(
+                data_dir=self.data_dir,
+                set="combined",
+                train=True,
+                transform=self.transform_train,
+                split_file=os.path.join(self.data_dir, "splits.json"),
+            )
 
         if not self.random_batches:
             trainloader = DataLoader(
@@ -489,8 +522,34 @@ class BaseModel(pl.LightningModule):
             testset = CIFAR100(root=self.data_dir, train=False, download=self.download, transform=self.test_transform)
 
         elif self.dataset == "Imagenet":
-            # path_to_imagenet = "/mnt/de2aec88-1b8c-41ee-9977-13e3c6e297a9/imagenet/original" TODO
+
             testset = ImageNet(root=self.data_dir, split="val", transform=self.test_transform)
+
+        elif self.dataset == "Acevedo":
+            testset = HematologyDataset(
+                data_dir=self.data_dir,
+                set="acevedo",
+                train=False,
+                transform=self.transform_train,
+                split_file=os.path.join(self.data_dir, "splits.json"),
+            )
+
+        elif self.dataset == "Matek":
+            testset = HematologyDataset(
+                data_dir=self.data_dir,
+                set="matek",
+                train=False,
+                transform=self.transform_train,
+                split_file=os.path.join(self.data_dir, "splits.json"),
+            )
+        elif self.dataset == "AcevedoMatek":
+            testset = HematologyDataset(
+                data_dir=self.data_dir,
+                set="combined",
+                train=False,
+                transform=self.transform_train,
+                split_file=os.path.join(self.data_dir, "splits.json"),
+            )
 
         testloader = DataLoader(
             testset,

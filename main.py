@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     ##### Data #####
     parser.add_argument("--data", help="Name of the dataset", default="CIFAR10")
-    parser.add_argument("--num_classes", help="Number of classes to classify", default=10)
+    parser.add_argument("--num_classes", help="Number of classes to classify", default=10, type=int)
     parser.add_argument(
         "--cifar_size",
         action="store_true",
@@ -133,7 +133,9 @@ if __name__ == "__main__":
     ##### Directories #####
     parser.add_argument(
         "--data_dir",
-        default=os.environ["DATASET_LOCATION"] if "DATASET_LOCATION" in os.environ.keys() else "./data",
+        default=os.environ["DATASET_LOCATION"]
+        if "DATASET_LOCATION" in os.environ.keys()
+        else "/home/s522r/Desktop/hida_challenge/Datasets",
         help="Location of the dataset",
     )
     parser.add_argument(
@@ -172,7 +174,7 @@ if __name__ == "__main__":
         pl.seed_everything(seed)
 
     # select correct directories according to dataset
-    selected_data_dir = os.path.join(data_dir, args.data if not args.data == "Imagenet" else "ILSVRC_2012")
+    selected_data_dir = data_dir  # os.path.join(data_dir, args.data if not args.data == "Imagenet" else "ILSVRC_2012")
     selected_exp_dir = os.path.join(exp_dir, args.data)
 
     # set MLflow and checkpoint directories
@@ -180,7 +182,7 @@ if __name__ == "__main__":
     mlrun_dir = os.path.join(selected_exp_dir, "mlruns")
 
     # check for misconfigurations in the parameters
-    detect_misconfigurations(model_name, args)
+    # detect_misconfigurations(model_name, args)
 
     # save specified parameters in dictionaries
     params = get_params(selected_data_dir, model_name, args, seed)
