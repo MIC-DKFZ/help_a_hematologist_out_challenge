@@ -38,6 +38,10 @@ class BaseModel(pl.LightningModule):
                 metrics_dict["Accuracy"] = Accuracy()
             if "f1" in hypparams["metrics"]:
                 metrics_dict["F1"] = F1Score(average="macro", num_classes=hypparams["num_classes"], multiclass=True)
+            if "f1_per_class" in hypparams["metrics"]:
+                metrics_dict["F1_per_class"] = F1Score(
+                    average=None, num_classes=hypparams["num_classes"], multiclass=True
+                )
             if "pr" in hypparams["metrics"]:
                 metrics_dict["Precision"] = Precision(
                     average="macro", num_classes=hypparams["num_classes"], multiclass=True
@@ -241,6 +245,11 @@ class BaseModel(pl.LightningModule):
             print("######################################### Model predicts NaNs!")
 
         metrics_res = self.train_metrics(y_hat, y)
+        if "train_F1_per_class" in metrics_res.keys():
+            for i, value in enumerate(metrics_res["train_F1_per_class"]):
+                metrics_res["train_F1_class_{}".format(i)] = value
+            del metrics_res["train_F1_per_class"]
+
         self.log_dict(
             metrics_res,
             on_step=False,
@@ -276,6 +285,10 @@ class BaseModel(pl.LightningModule):
         if self.task == "Classification":
             y_hat = self.softmax(y_hat)
         metrics_res = self.val_metrics(y_hat, y)
+        if "val_F1_per_class" in metrics_res.keys():
+            for i, value in enumerate(metrics_res["val_F1_per_class"]):
+                metrics_res["val_F1_class_{}".format(i)] = value
+            del metrics_res["val_F1_per_class"]
         self.log_dict(
             metrics_res,
             on_step=False,
