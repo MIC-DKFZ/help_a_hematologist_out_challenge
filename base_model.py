@@ -259,6 +259,9 @@ class BaseModel(pl.LightningModule):
         if self.num_classes == 1:
             y_hat = y_hat.view(-1)
 
+        if len(y) == 1:
+            y_hat = y_hat.unsqueeze(0)
+
         val_loss = self.criterion(y_hat, y)
         self.log(
             "val_loss",
