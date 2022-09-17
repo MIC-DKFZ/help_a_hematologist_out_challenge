@@ -166,6 +166,32 @@ class BaseModel(pl.LightningModule):
                 self.transform_train = get_starter_train()
                 self.test_transform = get_starter_test()
 
+            elif self.aug.startswith("IN"):
+                self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                from augmentation.policies.imagenet import (
+                    get_baseline,
+                    test_transform,
+                    get_auto_augmentation,
+                    get_baseline_cutout,
+                    get_rand_augmentation,
+                )
+
+                cutout_size = 64
+
+                if self.aug == "IN_baseline":
+                    self.transform_train = get_baseline(self.mean, self.std)
+
+                elif self.aug == "IN_baseline_cutout":
+                    self.transform_train = get_baseline_cutout(self.mean, self.std, cutout_size)
+
+                elif self.aug == "IN_autoaugment":
+                    self.transform_train = get_auto_augmentation(self.mean, self.std)
+
+                elif self.aug == "IN_randaugment":
+                    self.transform_train = get_rand_augmentation(self.mean, self.std)
+
+                self.test_transform = test_transform(self.mean, self.std)
+
         ################################################################################################################
 
         # switch to manual optimization for Sharpness Aware Minimization
@@ -247,7 +273,7 @@ class BaseModel(pl.LightningModule):
         metrics_res = self.train_metrics(y_hat, y)
         if "train_F1_per_class" in metrics_res.keys():
             for i, value in enumerate(metrics_res["train_F1_per_class"]):
-                metrics_res["train_F1_class_{}".format(i)] = value if not np.isnan(value) else 0.0
+                metrics_res["train_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
             del metrics_res["train_F1_per_class"]
 
         self.log_dict(
@@ -287,7 +313,7 @@ class BaseModel(pl.LightningModule):
         metrics_res = self.val_metrics(y_hat, y)
         if "val_F1_per_class" in metrics_res.keys():
             for i, value in enumerate(metrics_res["val_F1_per_class"]):
-                metrics_res["val_F1_class_{}".format(i)] = value if not np.isnan(value) else 0.0
+                metrics_res["val_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
             del metrics_res["val_F1_per_class"]
         self.log_dict(
             metrics_res,

@@ -6,6 +6,7 @@ import copy
 import os
 import glob
 import json
+from PIL import Image
 
 
 crop_Ace20 = 250
@@ -77,7 +78,8 @@ class HematologyDataset(Dataset):
         return len(self.files)
 
     def __getitem__(self, idx):
-        img = (torch.from_numpy(np.array(imread(self.files[idx])[:, :, :3])) / 255.0).permute(2, 0, 1)
+        # img = (torch.from_numpy(np.array(imread(self.files[idx])[:, :, :3])) / 255.0).permute(2, 0, 1)
+        img = Image.fromarray(imread(self.files[idx])[:, :, :3])  # .permute(2, 0, 1)
 
         if self.transform:
             img = self.transform(img)
