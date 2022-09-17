@@ -247,7 +247,7 @@ class BaseModel(pl.LightningModule):
         metrics_res = self.train_metrics(y_hat, y)
         if "train_F1_per_class" in metrics_res.keys():
             for i, value in enumerate(metrics_res["train_F1_per_class"]):
-                metrics_res["train_F1_class_{}".format(i)] = value
+                metrics_res["train_F1_class_{}".format(i)] = value if not np.isnan(value) else 0.0
             del metrics_res["train_F1_per_class"]
 
         self.log_dict(
@@ -287,7 +287,7 @@ class BaseModel(pl.LightningModule):
         metrics_res = self.val_metrics(y_hat, y)
         if "val_F1_per_class" in metrics_res.keys():
             for i, value in enumerate(metrics_res["val_F1_per_class"]):
-                metrics_res["val_F1_class_{}".format(i)] = value
+                metrics_res["val_F1_class_{}".format(i)] = value if not np.isnan(value) else 0.0
             del metrics_res["val_F1_per_class"]
         self.log_dict(
             metrics_res,
