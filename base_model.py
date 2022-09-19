@@ -162,6 +162,8 @@ class BaseModel(pl.LightningModule):
         elif self.dataset in ["Acevedo", "Matek", "AcevedoMatek"]:
             from augmentation.policies.hematology import get_starter_test, get_starter_train
 
+            self.crop = hypparams["crop"]
+
             if self.aug == "starter":
                 self.transform_train = get_starter_train()
                 self.test_transform = get_starter_test()
@@ -510,6 +512,7 @@ class BaseModel(pl.LightningModule):
                 train=True,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
+                starter_crops=self.crop,
             )
 
         elif self.dataset == "Matek":
@@ -519,6 +522,7 @@ class BaseModel(pl.LightningModule):
                 train=True,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
+                starter_crops=self.crop,
             )
         elif self.dataset == "AcevedoMatek":
             trainset = HematologyDataset(
@@ -527,6 +531,7 @@ class BaseModel(pl.LightningModule):
                 train=True,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
+                starter_crops=self.crop,
             )
 
         if not self.random_batches:

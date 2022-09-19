@@ -14,20 +14,21 @@ crop_Mat19 = 345
 crop_WBC1 = 288
 
 dataset_image_size = {
-    "Ace_20": crop_Ace20,  # 250,
-    "Mat_19": crop_Mat19,  # 345,
+    "Acevedo_20": crop_Ace20,  # 250,
+    "Matek_19": crop_Mat19,  # 345,
     "WBC1": crop_WBC1,  # 288,
 }
 
 
 class HematologyDataset(Dataset):
-    def __init__(self, data_dir, set, train=True, transform=None, split_file=None):
+    def __init__(self, data_dir, set, train=True, transform=None, split_file=None, starter_crops=False):
         """
         data_dir: Path to parent_dir where the 3 dataset folders are located
         set: "acevedo" (train on acevedo, val on matek), "matek" (train on matek, val on acevedo), "combined" (20/80 split on full data)
         train: True if train, False if validation
         """
         self.transform = transform
+        self.starter_crops = starter_crops
 
         label_map = {
             "basophil": 0,
@@ -79,7 +80,26 @@ class HematologyDataset(Dataset):
 
     def __getitem__(self, idx):
         # img = (torch.from_numpy(np.array(imread(self.files[idx])[:, :, :3])) / 255.0).permute(2, 0, 1)
-        img = Image.fromarray(imread(self.files[idx])[:, :, :3])  # .permute(2, 0, 1)
+
+        image = imread(self.files[idx])[:, :, :3]
+
+        if self.starter_crops:
+            print("before", image.shape)
+            orginal_dataset = self.files[idx].split("/")[-3]
+            crop_size = dataset_image_size[orginal_dataset]
+            h1 = (image.shape[0] - crop_size) / 2
+            h1 = int(h1)
+            h2 = (image.shape[0] + crop_size) / 2
+            h2 = int(h2)
+
+            w1 = (image.shape[1] - crop_size) / 2
+            w1 = int(w1)
+            w2 = (image.shape[1] + crop_size) / 2
+            w2 = int(w2)
+            image = image[h1:h2, w1:w2, :]
+            print("after", image.shape)
+
+        img = Image.fromarray(image)
 
         if self.transform:
             img = self.transform(img)

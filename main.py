@@ -60,6 +60,7 @@ if __name__ == "__main__":
         default="baseline",
         help="baseline / baseline_cutout / autoaugment / randaugment / album",
     )
+    parser.add_argument("--crop", action="store_true", help="Whether to apply cropping strategy from starter notebook")
     parser.add_argument("--mixup", action="store_true", help="Enables mixing up data samples during training")
     parser.add_argument("--mixup_alpha", default=0.2, type=float)
     parser.add_argument(
