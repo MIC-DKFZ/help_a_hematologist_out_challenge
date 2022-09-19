@@ -84,7 +84,7 @@ class HematologyDataset(Dataset):
         image = imread(self.files[idx])[:, :, :3]
 
         if self.starter_crops:
-            print("before", image.shape)
+            # print("before", image.shape)
             orginal_dataset = self.files[idx].split("/")[-3]
             crop_size = dataset_image_size[orginal_dataset]
             h1 = (image.shape[0] - crop_size) / 2
@@ -97,7 +97,7 @@ class HematologyDataset(Dataset):
             w2 = (image.shape[1] + crop_size) / 2
             w2 = int(w2)
             image = image[h1:h2, w1:w2, :]
-            print("after", image.shape)
+            # print("after", image.shape)
 
         img = Image.fromarray(image)
 
