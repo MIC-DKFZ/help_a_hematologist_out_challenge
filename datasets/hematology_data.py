@@ -7,6 +7,7 @@ import os
 import glob
 import json
 from PIL import Image
+import random
 from typing import Iterator
 
 
@@ -137,18 +138,27 @@ class SamplerCombiner(Sampler[int]):
         return self.num_samples
 
     def __iter__(self) -> Iterator[int]:
-        self.sampler_a = self.sampler_a.__iter__()
-        self.sampler_b = self.sampler_b.__iter__()
+        self.sampler_a = list(self.sampler_a.__iter__())
+        self.sampler_b = list(self.sampler_b.__iter__())
+        self.index = 0
         return self
 
     def __next__(self):
-        if np.random.rand() <= self.prob_a:
-            # sampler_a will be used
-            out = next(self.sampler_a)
+
+        if self.index < len(self):
+
+            if np.random.rand() <= self.prob_a:
+                # sampler_a will be used
+                out = random.choice(self.sampler_a)
+
+            else:
+                # sampler_b will be used
+                out = random.choice(self.sampler_b)
+
+            self.index += 1
 
         else:
-            # sampler_b will be used
-            out = next(self.sampler_b)
+            raise StopIteration
 
         return out
 
