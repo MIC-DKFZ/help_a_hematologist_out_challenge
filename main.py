@@ -130,6 +130,13 @@ if __name__ == "__main__":
             " of CE"
         ),
     )
+    parser.add_argument(
+        "--balanced_sampling",
+        action="store_true",
+        help="Whether WeightedRandomSampler should yield class balanced samples",
+    )
+    parser.add_argument("--sampler", type=str, default="full")
+    parser.add_argument("--random_prob", default=2 / 3, type=float)
 
     ##### Directories #####
     parser.add_argument(

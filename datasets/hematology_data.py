@@ -1,5 +1,5 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, WeightedRandomSampler, Sampler
 from imageio import imread
 import numpy as np
 import copy
@@ -7,6 +7,7 @@ import os
 import glob
 import json
 from PIL import Image
+from typing import Iterator
 
 
 crop_Ace20 = 250
@@ -107,6 +108,49 @@ class HematologyDataset(Dataset):
         lb = self.labels[idx]
 
         return img, lb
+
+    def get_weighted_random_sampler(self, balanced=False):
+
+        # WeightedRandomSampler: https://pytorch.org/docs/stable/data.html#torch.utils.data.WeightedRandomSampler
+        if balanced:
+            class_sample_count = np.array([len(np.where(self.labels == t)[0]) for t in np.unique(self.labels)])
+            weight = 1.0 / class_sample_count
+        else:
+            weight = [0.03, 0.97]  # TODO insert weights for specific classes
+        samples_weight = np.array([weight[t] for t in self.labels])
+        samples_weight = torch.from_numpy(samples_weight)
+        samples_weight = samples_weight.double()
+        sampler = WeightedRandomSampler(samples_weight, len(samples_weight))
+
+        return sampler
+
+
+class SamplerCombiner(Sampler[int]):
+    def __init__(self, sampler_a, sampler_b, prob_a=2 / 3):
+        self.sampler_a = sampler_a
+        self.sampler_b = sampler_b
+        self.prob_a = prob_a
+
+        self.num_samples = sampler_a.num_samples
+
+    def __len__(self) -> int:
+        return self.num_samples
+
+    def __iter__(self) -> Iterator[int]:
+        self.sampler_a = self.sampler_a.__iter__()
+        self.sampler_b = self.sampler_b.__iter__()
+        return self
+
+    def __next__(self):
+        if np.random.rand() <= self.prob_a:
+            # sampler_a will be used
+            out = next(self.sampler_a)
+
+        else:
+            # sampler_b will be used
+            out = next(self.sampler_b)
+
+        return out
 
 
 class DatasetGenerator(Dataset):

@@ -19,7 +19,7 @@ from madgrad import MADGRAD
 from timm.optim import RMSpropTF
 from augmentation.mixup import mixup_data, mixup_criterion
 
-from datasets.hematology_data import HematologyDataset
+from datasets.hematology_data import HematologyDataset, SamplerCombiner
 
 
 class BaseModel(pl.LightningModule):
@@ -74,7 +74,9 @@ class BaseModel(pl.LightningModule):
         self.T_max = hypparams["T_max"]
         self.warmstart = hypparams["warmstart"]
         self.epochs = hypparams["epochs"]
-        self.random_batches = hypparams["random_batches"]
+        # self.random_batches = hypparams["random_batches"]
+        self.sampler = hypparams["sampler"]
+        self.random_prob = hypparams["random_prob"]
 
         # Regularization techniques
         self.aug = hypparams["augmentation"]
@@ -95,6 +97,7 @@ class BaseModel(pl.LightningModule):
         self.input_dim = hypparams["input_dim"]
         self.input_channels = hypparams["input_channels"]
         self.num_classes = hypparams["num_classes"]
+        self.balanced = hypparams["balanced"]
 
         os.makedirs(self.data_dir, exist_ok=True)
         self.download = False if any(os.scandir(self.data_dir)) else True
@@ -218,6 +221,10 @@ class BaseModel(pl.LightningModule):
     def training_step(self, batch, batch_idx):
 
         x, y = batch
+
+        """unique, counts = np.unique(y.cpu(), return_counts=True)
+        print(unique)
+        print(counts)"""
 
         if self.mixup:
             inputs, targets_a, targets_b, lam = mixup_data(x, y, alpha=self.mixup_alpha)
@@ -534,7 +541,7 @@ class BaseModel(pl.LightningModule):
                 starter_crops=self.crop,
             )
 
-        if not self.random_batches:
+        """if not self.random_batches:
             trainloader = DataLoader(
                 trainset,
                 batch_size=self.batch_size,
@@ -556,6 +563,57 @@ class BaseModel(pl.LightningModule):
                 worker_init_fn=seed_worker,
                 persistent_workers=True,
                 sampler=random_sampler,
+            )"""
+
+        if self.sampler == "full":
+            trainloader = DataLoader(
+                trainset,
+                batch_size=self.batch_size,
+                shuffle=True,
+                num_workers=self.num_workers,
+                pin_memory=True,
+                worker_init_fn=seed_worker,
+                persistent_workers=True,
+            )
+
+        elif self.sampler == "random":
+            random_sampler = RandomSampler(trainset, replacement=True, num_samples=len(trainset))
+            trainloader = DataLoader(
+                trainset,
+                batch_size=self.batch_size,
+                num_workers=self.num_workers,
+                pin_memory=True,
+                worker_init_fn=seed_worker,
+                persistent_workers=True,
+                sampler=random_sampler,
+            )
+
+        elif self.sampler == "weighted":
+            weighted_random_sampler = trainset.get_weighted_random_sampler(balanced=self.balanced)
+            trainloader = DataLoader(
+                trainset,
+                batch_size=self.batch_size,
+                shuffle=False,
+                num_workers=self.num_workers,
+                pin_memory=True,
+                worker_init_fn=seed_worker,
+                persistent_workers=True,
+                sampler=weighted_random_sampler,
+            )
+
+        elif self.sampler == "weighted_and_random":
+            weighted_random_sampler = trainset.get_weighted_random_sampler(balanced=self.balanced)
+            random_sampler = RandomSampler(trainset, replacement=True, num_samples=len(trainset))
+            combined_sampler = SamplerCombiner(random_sampler, weighted_random_sampler, prob_a=self.random_prob)
+            trainloader = DataLoader(
+                trainset,
+                batch_size=self.batch_size,
+                shuffle=False,
+                num_workers=self.num_workers,
+                pin_memory=True,
+                worker_init_fn=seed_worker,
+                persistent_workers=True,
+                sampler=combined_sampler,
             )
 
         return trainloader

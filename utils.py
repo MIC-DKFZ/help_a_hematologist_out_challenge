@@ -206,6 +206,9 @@ def get_params(selected_data_dir, model_name, args, seed):
         "metrics": args.metrics,
         "num_gpus": args.gpu_count,
         "crop": args.crop,
+        "balanced": args.balanced_sampling,
+        "sampler": args.sampler,
+        "random_prob": args.random_prob,
     }
 
     return params
@@ -249,6 +252,9 @@ def get_params_to_log(params, model_name):
         "regression": params["regression"],
         "num_gpus": params["num_gpus"],
         "crop": params["crop"],
+        "balanced": params["balanced"],
+        "sampler": params["sampler"],
+        "random_prob": params["random_prob"],
     }
 
     return params_to_log
