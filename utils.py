@@ -10,6 +10,7 @@ from models.dynamic_resnet import get_resnet
 from models.wide_resnet import WRN2810
 from models.efficientnet import *
 from models.pyramidnet import PyramidNet110, PyramidNet272
+from models.pretrained_resnet import get_IN_resnet
 
 registered_models = [
     "VGG16",
@@ -65,6 +66,17 @@ def get_model(model_name, params):
     elif model_name.startswith("ResNet"):
 
         model = get_resnet(params=params)
+
+    elif model_name == "IN_ResNet18":
+        model = get_IN_resnet(params, "18", pretrained=True)
+    elif model_name == "IN_ResNet34":
+        model = get_IN_resnet(params, "34", pretrained=True)
+    elif model_name == "IN_ResNet50":
+        model = get_IN_resnet(params, "50", pretrained=True)
+    elif model_name == "IN_ResNet101":
+        model = get_IN_resnet(params, "101", pretrained=True)
+    elif model_name == "IN_ResNet152":
+        model = get_IN_resnet(params, "152", pretrained=True)
 
     # else:
 

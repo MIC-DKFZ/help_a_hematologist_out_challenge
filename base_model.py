@@ -340,20 +340,21 @@ class BaseModel(pl.LightningModule):
         from models.preact_resnet import PreActBlock, PreActBottleneck
 
         # TODO: disable weight init if model is pretrained once pretrained models are enabled
-        print("Initializing weights")
-        for m in self.modules():
-            if isinstance(m, nn.Conv2d):
-                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
-                # nn.init.xavier_uniform_(m.weight, gain=np.sqrt(2))
-                if m.bias is not None:
+        if "IN" not in self.name:
+            print("Initializing weights")
+            for m in self.modules():
+                if isinstance(m, nn.Conv2d):
+                    nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity="relu")
+                    # nn.init.xavier_uniform_(m.weight, gain=np.sqrt(2))
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
+                elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.SyncBatchNorm)):
+                    nn.init.constant_(m.weight, 1)
                     nn.init.constant_(m.bias, 0)
-            elif isinstance(m, (nn.BatchNorm2d, nn.GroupNorm, nn.SyncBatchNorm)):
-                nn.init.constant_(m.weight, 1)
-                nn.init.constant_(m.bias, 0)
-            elif isinstance(m, nn.Linear):
-                nn.init.normal_(m.weight, std=1e-3)
-                if m.bias is not None:
-                    nn.init.constant_(m.bias, 0)
+                elif isinstance(m, nn.Linear):
+                    nn.init.normal_(m.weight, std=1e-3)
+                    if m.bias is not None:
+                        nn.init.constant_(m.bias, 0)
 
         # Zero-initialize the last BN in each residual branch,
         # so that the residual branch starts with zeros, and each residual block behaves like an identity.
