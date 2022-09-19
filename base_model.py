@@ -190,7 +190,7 @@ class BaseModel(pl.LightningModule):
                 elif self.aug == "IN_randaugment":
                     self.transform_train = get_rand_augmentation(self.mean, self.std)
 
-                self.test_transform = test_transform(self.mean, self.std)
+                self.test_transform = get_starter_test()
 
         ################################################################################################################
 
