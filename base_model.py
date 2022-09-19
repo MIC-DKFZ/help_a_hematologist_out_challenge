@@ -515,7 +515,7 @@ class BaseModel(pl.LightningModule):
         elif self.dataset == "Acevedo":
             trainset = HematologyDataset(
                 data_dir=self.data_dir,
-                set="acevedo",
+                dset="acevedo",
                 train=True,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -525,7 +525,7 @@ class BaseModel(pl.LightningModule):
         elif self.dataset == "Matek":
             trainset = HematologyDataset(
                 data_dir=self.data_dir,
-                set="matek",
+                dset="matek",
                 train=True,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -534,7 +534,7 @@ class BaseModel(pl.LightningModule):
         elif self.dataset == "AcevedoMatek":
             trainset = HematologyDataset(
                 data_dir=self.data_dir,
-                set="combined",
+                dset="combined",
                 train=True,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -633,7 +633,7 @@ class BaseModel(pl.LightningModule):
         elif self.dataset == "Acevedo":
             testset = HematologyDataset(
                 data_dir=self.data_dir,
-                set="acevedo",
+                dset="acevedo",
                 train=False,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -642,7 +642,7 @@ class BaseModel(pl.LightningModule):
         elif self.dataset == "Matek":
             testset = HematologyDataset(
                 data_dir=self.data_dir,
-                set="matek",
+                dset="matek",
                 train=False,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -650,7 +650,7 @@ class BaseModel(pl.LightningModule):
         elif self.dataset == "AcevedoMatek":
             testset = HematologyDataset(
                 data_dir=self.data_dir,
-                set="combined",
+                dset="combined",
                 train=False,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
