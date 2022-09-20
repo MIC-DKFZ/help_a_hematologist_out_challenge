@@ -101,7 +101,7 @@ class HematologyDataset(Dataset):
             image = image[h1:h2, w1:w2, :]
             # print("after", image.shape)
 
-        img = Image.fromarray(copy.deepcopy(image))
+        img = Image.fromarray(image)
 
         if self.transform:
             img = self.transform(img)
