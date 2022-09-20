@@ -30,6 +30,7 @@ class BaseModel(pl.LightningModule):
         self.task = "Classification" if not hypparams["regression"] else "Regression"
 
         # Metrics
+        self.metric_stepwise = False
         metrics_dict = {}
 
         if self.task == "Classification":
@@ -37,16 +38,16 @@ class BaseModel(pl.LightningModule):
             if "acc" in hypparams["metrics"]:
                 metrics_dict["Accuracy"] = Accuracy()
             if "f1" in hypparams["metrics"]:
-                metrics_dict["F1"] = F1Score(average="macro", num_classes=hypparams["num_classes"], multiclass=True)
+                metrics_dict["F1"] = F1Score(average="macro", num_classes=hypparams["num_classes"], multiclass=None)
             if "f1_per_class" in hypparams["metrics"]:
                 metrics_dict["F1_per_class"] = F1Score(
-                    average=None, num_classes=hypparams["num_classes"], multiclass=True
+                    average=None, num_classes=hypparams["num_classes"], multiclass=None
                 )
             if "pr" in hypparams["metrics"]:
                 metrics_dict["Precision"] = Precision(
-                    average="macro", num_classes=hypparams["num_classes"], multiclass=True
+                    average="macro", num_classes=hypparams["num_classes"], multiclass=None
                 )
-                metrics_dict["Recall"] = Recall(average="macro", num_classes=hypparams["num_classes"], multiclass=True)
+                metrics_dict["Recall"] = Recall(average="macro", num_classes=hypparams["num_classes"], multiclass=None)
             if "top5acc" in hypparams["metrics"]:
                 metrics_dict["Accuracy_top5"] = Accuracy(top_k=5)
 
@@ -195,7 +196,7 @@ class BaseModel(pl.LightningModule):
                 elif self.aug == "IN_randaugment":
                     self.transform_train = get_rand_augmentation(self.mean, self.std)
 
-                self.test_transform = get_starter_test()
+                self.test_transform = test_transform(self.mean, self.std)
 
         ################################################################################################################
 
@@ -272,26 +273,29 @@ class BaseModel(pl.LightningModule):
         )
 
         # predict and save metrics
-        if self.task == "Classification":
+        """if self.task == "Classification":
             with torch.no_grad():
-                y_hat = self.softmax(y_hat)
+                y_hat = self.softmax(y_hat)"""
 
         if torch.isnan(y_hat).any():
             print("######################################### Model predicts NaNs!")
 
-        metrics_res = self.train_metrics(y_hat, y)
-        if "train_F1_per_class" in metrics_res.keys():
-            for i, value in enumerate(metrics_res["train_F1_per_class"]):
-                metrics_res["train_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
-            del metrics_res["train_F1_per_class"]
+        if self.metric_stepwise:
+            metrics_res = self.train_metrics(y_hat, y)
+            if "train_F1_per_class" in metrics_res.keys():
+                for i, value in enumerate(metrics_res["train_F1_per_class"]):
+                    metrics_res["train_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
+                del metrics_res["train_F1_per_class"]
 
-        self.log_dict(
-            metrics_res,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-            sync_dist=True if self.trainer.num_devices > 1 else False,
-        )
+            self.log_dict(
+                metrics_res,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=True,
+                sync_dist=True if self.trainer.num_devices > 1 else False,
+            )
+        else:
+            self.train_metrics.update(y_hat, y)
 
         return loss
 
@@ -317,9 +321,27 @@ class BaseModel(pl.LightningModule):
         )
 
         # predict and save metrics
-        if self.task == "Classification":
-            y_hat = self.softmax(y_hat)
-        metrics_res = self.val_metrics(y_hat, y)
+        """if self.task == "Classification":
+            y_hat = self.softmax(y_hat)"""
+        if self.metric_stepwise:
+            metrics_res = self.val_metrics(y_hat, y)
+            if "val_F1_per_class" in metrics_res.keys():
+                for i, value in enumerate(metrics_res["val_F1_per_class"]):
+                    metrics_res["val_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
+                del metrics_res["val_F1_per_class"]
+            self.log_dict(
+                metrics_res,
+                on_step=False,
+                on_epoch=True,
+                prog_bar=True,
+                sync_dist=True if self.trainer.num_devices > 1 else False,
+            )
+        else:
+            self.val_metrics.update(y_hat, y)
+
+    def on_train_epoch_end(self) -> None:
+
+        metrics_res = self.val_metrics.compute()
         if "val_F1_per_class" in metrics_res.keys():
             for i, value in enumerate(metrics_res["val_F1_per_class"]):
                 metrics_res["val_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
@@ -331,6 +353,23 @@ class BaseModel(pl.LightningModule):
             prog_bar=True,
             sync_dist=True if self.trainer.num_devices > 1 else False,
         )
+
+        metrics_res = self.train_metrics.compute()
+        if "train_F1_per_class" in metrics_res.keys():
+            for i, value in enumerate(metrics_res["train_F1_per_class"]):
+                metrics_res["train_F1_class_{}".format(i)] = value if not torch.isnan(value) else 0.0
+            del metrics_res["train_F1_per_class"]
+
+        self.log_dict(
+            metrics_res,
+            on_step=False,
+            on_epoch=True,
+            prog_bar=True,
+            sync_dist=True if self.trainer.num_devices > 1 else False,
+        )
+
+        self.train_metrics.reset()
+        self.val_metrics.reset()
 
     def on_train_start(self):
 
@@ -636,7 +675,7 @@ class BaseModel(pl.LightningModule):
                 data_dir=self.data_dir,
                 dset="acevedo",
                 train=False,
-                transform=self.transform_train,
+                transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
             )
 
@@ -645,7 +684,7 @@ class BaseModel(pl.LightningModule):
                 data_dir=self.data_dir,
                 dset="matek",
                 train=False,
-                transform=self.transform_train,
+                transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
             )
         elif self.dataset == "AcevedoMatek":
@@ -653,7 +692,7 @@ class BaseModel(pl.LightningModule):
                 data_dir=self.data_dir,
                 dset="combined",
                 train=False,
-                transform=self.transform_train,
+                transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
             )
 

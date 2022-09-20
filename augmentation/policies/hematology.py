@@ -35,7 +35,7 @@ def get_starter_test():
 
     normalization = torchvision.transforms.Normalize(mean, std)
 
-    test_transform = transforms.Compose([transforms.Resize(resize), transforms.ToTensor(), normalization])
+    test_transform = transforms.Compose([transforms.Resize([resize, resize]), transforms.ToTensor(), normalization])
 
     return test_transform
 
