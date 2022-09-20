@@ -46,6 +46,17 @@ class HematologyDataset(Dataset):
             "lymphocyte_typical": 10,
         }
 
+        self.mean_domains = [
+            [0.8691377, 0.7415468, 0.71605015],
+            [0.8209144, 0.72821516, 0.8363857],
+            [0.740351, 0.6517948, 0.7791037],
+        ]
+        self.std_domains = [
+            [0.16251542, 0.18978004, 0.07850721],
+            [0.16301796, 0.25068003, 0.09190886],
+            [0.18629327, 0.24896133, 0.16334666],
+        ]
+
         acevedo_dir = os.path.join(data_dir, "Acevedo_20")
         matek_dir = os.path.join(data_dir, "Matek_19")
 
@@ -87,8 +98,8 @@ class HematologyDataset(Dataset):
 
         if self.starter_crops:
             # print("before", image.shape)
-            orginal_dataset = self.files[idx].split("/")[-3]
-            crop_size = dataset_image_size[orginal_dataset]
+            original_dataset = self.files[idx].split("/")[-3]
+            crop_size = dataset_image_size[original_dataset]
             h1 = (image.shape[0] - crop_size) / 2
             h1 = int(h1)
             h2 = (image.shape[0] + crop_size) / 2
