@@ -25,7 +25,7 @@ from datasets.hematology_data import HematologyDataset, SamplerCombiner
 class BaseModel(pl.LightningModule):
     def __init__(self, hypparams):
         super(BaseModel, self).__init__()
-
+        print(hypparams)
         # Task
         self.task = "Classification" if not hypparams["regression"] else "Regression"
 
@@ -50,7 +50,6 @@ class BaseModel(pl.LightningModule):
                 metrics_dict["Recall"] = Recall(average="macro", num_classes=hypparams["num_classes"], multiclass=None)
             if "top5acc" in hypparams["metrics"]:
                 metrics_dict["Accuracy_top5"] = Accuracy(top_k=5)
-
         elif self.task == "Regression":
 
             if "mse" in hypparams["metrics"]:
@@ -99,6 +98,10 @@ class BaseModel(pl.LightningModule):
         self.input_channels = hypparams["input_channels"]
         self.num_classes = hypparams["num_classes"]
         self.balanced = hypparams["balanced"]
+
+        # Domain Transfer
+        self.target_domain_train=hypparams["target_domain_train"]
+        self.target_domain_test=hypparams["target_domain_test"]
 
         os.makedirs(self.data_dir, exist_ok=True)
         self.download = False if any(os.scandir(self.data_dir)) else True
@@ -557,6 +560,7 @@ class BaseModel(pl.LightningModule):
                 data_dir=self.data_dir,
                 dset="acevedo",
                 train=True,
+                target_domain=self.target_domain_train,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
@@ -567,6 +571,7 @@ class BaseModel(pl.LightningModule):
                 data_dir=self.data_dir,
                 dset="matek",
                 train=True,
+                target_domain=self.target_domain_train,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
@@ -576,6 +581,7 @@ class BaseModel(pl.LightningModule):
                 data_dir=self.data_dir,
                 dset="combined",
                 train=True,
+                target_domain=self.target_domain_train,
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
@@ -674,6 +680,7 @@ class BaseModel(pl.LightningModule):
             testset = HematologyDataset(
                 data_dir=self.data_dir,
                 dset="acevedo",
+                target_domain=self.target_domain_test,
                 train=False,
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -683,6 +690,7 @@ class BaseModel(pl.LightningModule):
             testset = HematologyDataset(
                 data_dir=self.data_dir,
                 dset="matek",
+                target_domain=self.target_domain_test,
                 train=False,
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
@@ -691,6 +699,7 @@ class BaseModel(pl.LightningModule):
             testset = HematologyDataset(
                 data_dir=self.data_dir,
                 dset="combined",
+                target_domain=self.target_domain_test,
                 train=False,
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),

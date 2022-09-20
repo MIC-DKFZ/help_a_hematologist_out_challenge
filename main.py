@@ -170,6 +170,23 @@ if __name__ == "__main__":
     parser.add_argument(
         "--suppress_progress_bar", action="store_true", help="Will suppress the Lightning progress bar during training"
     )
+    #parser.add_argument("--batch_size", type=int, default=128)
+    ##### Domain Transfer #####
+    parser.add_argument(
+        "--target_domain_train",
+        default=None,
+        help=(
+            "Target Domain for train dataset, can be Matek_19, Acevedo_20 or WBC1. None by default which means no domain transfer is used"
+        ),
+    )
+    parser.add_argument(
+        "--target_domain_test",
+        default=None,
+        help=(
+            "Target Domain for test dataset, can be Matek_19, Acevedo_20 or WBC1. None by default which means no domain transfer is used"
+        ),
+    )
+
 
     args = parser.parse_args()
 

@@ -221,6 +221,8 @@ def get_params(selected_data_dir, model_name, args, seed):
         "balanced": args.balanced_sampling,
         "sampler": args.sampler,
         "random_prob": args.random_prob,
+        "target_domain_train":args.target_domain_train,
+        "target_domain_test":args.target_domain_test,
     }
 
     return params
@@ -267,6 +269,8 @@ def get_params_to_log(params, model_name):
         "balanced": params["balanced"],
         "sampler": params["sampler"],
         "random_prob": params["random_prob"],
+        "target_domain_train":params["target_domain_train"],
+        "target_domain_test":params["target_domain_test"],
     }
 
     return params_to_log
