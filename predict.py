@@ -14,6 +14,8 @@ from PIL import Image
 from torch.utils.data import DataLoader
 
 from models.pretrained_resnet import get_IN_resnet
+from models.efficientnet import EfficientNetB0, get_EfficientNetv2m
+from models.dynamic_resnet import get_resnet
 from augmentation.policies.hematology import *
 from base_model import seed_worker
 import pandas as pd
@@ -75,19 +77,67 @@ class HematologyDataset_Testset(Dataset):
         return img, self.files[idx].split("/")[-1].replace(".png", ".TIF")
 
 
+def load_IN_resnet(cp):
+
+    params = {"num_classes": 11, "inference": True}
+
+    model = get_IN_resnet(params=params, depth="18", pretrained=None)
+    pretrained_dict = torch.load(cp, map_location={"cuda:0": "cpu"})
+
+    if "state_dict" in pretrained_dict.keys():
+        pretrained_dict = pretrained_dict["state_dict"]
+    pretrained_dict = {
+        k.replace(".model", "").replace("module.", "").replace("backbone.", ""): v for k, v in pretrained_dict.items()
+    }
+
+    model.load_state_dict(pretrained_dict)
+
+    return model
+
+
+def load_resnet(cp):
+
+    params = {
+        "num_classes": 11,
+        "inference": True,
+        "cifar_size": False,
+        "bottleneck": False,
+        "name": "ResNet34",
+        "input_channels": 3,
+        "input_dim": 2,
+        "resnet_dropout": 0.0,
+        "stochastic_depth": 0.0,
+        "squeeze_excitation": False,
+        "se_rd_ratio": 0.25,
+    }
+
+    model = get_resnet(params)
+    pretrained_dict = torch.load(cp, map_location={"cuda:0": "cpu"})
+
+    if "state_dict" in pretrained_dict.keys():
+        pretrained_dict = pretrained_dict["state_dict"]
+    pretrained_dict = {
+        k.replace(".model", "").replace("module.", "").replace("backbone.", ""): v for k, v in pretrained_dict.items()
+    }
+
+    model.load_state_dict(pretrained_dict)
+
+    return model
+
+
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument(
         "--cp_dir",
         type=str,
         help="path to checkpoints",
-        default="/home/s522r/Desktop/cluster_results/HematologyData/checkpoints",
+        default="/home/s522r/Desktop/cluster_results/HematologyData/test",
     )
     parser.add_argument(
         "--data_dir",
         type=str,
         help="path to data",
-        default="/home/s522r/Desktop/hida_challenge/Datasets/WBC1",
+        default="/home/s522r/Desktop/hida_challenge/Datasets/WBC1_WBC1",
     )
     parser.add_argument("--save_dir", default="/home/s522r/Desktop/cluster_results/HematologyData/preds")
 
@@ -96,8 +146,6 @@ if __name__ == "__main__":
     save_dir = args.save_dir
 
     checkpoints = glob.glob(os.path.join(cp_dir, "*.ckpt"))
-
-    params = {"num_classes": 11, "inference": True}
 
     data = HematologyDataset_Testset(args.data_dir, get_bg_val_transform())
     testloader = DataLoader(
@@ -129,21 +177,12 @@ if __name__ == "__main__":
 
     for cp in checkpoints:
 
-        """model = get_IN_resnet(params=params, depth="18", pretrained=False)
-        model.load_from_checkpoint(cp, hypparams=params, model=model)"""
+        if "IN_RN" in cp:
+            model = load_IN_resnet(cp)
 
-        model = get_IN_resnet(params=params, depth="18", pretrained=None)
-        # model.classifier[1] = torch.nn.Linear(in_features=1280, out_features=6, bias=True)
-        pretrained_dict = torch.load(cp, map_location={"cuda:0": "cpu"})
+        elif "RN34" in cp:
+            model = load_resnet(cp)
 
-        if "state_dict" in pretrained_dict.keys():
-            pretrained_dict = pretrained_dict["state_dict"]
-        pretrained_dict = {
-            k.replace(".model", "").replace("module.", "").replace("backbone.", ""): v
-            for k, v in pretrained_dict.items()
-        }
-
-        model.load_state_dict(pretrained_dict)
         model = model.to("cuda")
         model.eval()
 
