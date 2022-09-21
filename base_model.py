@@ -365,8 +365,7 @@ class BaseModel(pl.LightningModule):
         else:
             self.val_metrics.update(y_hat, y)
 
-    def on_train_epoch_end(self) -> None:
-
+    def on_validation_epoch_end(self) -> None:
         metrics_res = self.val_metrics.compute()
         if "val_F1_per_class" in metrics_res.keys():
             for i, value in enumerate(metrics_res["val_F1_per_class"]):
@@ -379,6 +378,10 @@ class BaseModel(pl.LightningModule):
             prog_bar=True,
             sync_dist=True if self.trainer.num_devices > 1 else False,
         )
+
+
+    def on_train_epoch_end(self) -> None:
+
 
         metrics_res = self.train_metrics.compute()
         if "train_F1_per_class" in metrics_res.keys():

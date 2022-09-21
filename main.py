@@ -233,9 +233,13 @@ if __name__ == "__main__":
     ## Pytorch Lightning Trainer
     # Checkpoint callback if model should be saved
     chpt_name = args.chpt_name if len(args.chpt_name) > 0 else model_name
-    checkpoint_callback = ModelCheckpoint(
-        dirpath=chpt_dir, filename=chpt_name + "-{epoch}-{val_loss:.2f}-{val_acc:.3f}"
+    #checkpoint_callback = ModelCheckpoint(
+    #    dirpath=chpt_dir, filename=chpt_name + "-{epoch}-{val_loss:.2f}-{val_acc:.3f}"
+    #)
+    checkpoint_callback = ModelCheckpoint(monitor="val_F1",mode="max",
+        dirpath=chpt_dir, filename=chpt_name + "-{epoch}-{val_loss:.2f}-{val_F1:.3f}",save_last=True
     )
+    checkpoint_callback.CHECKPOINT_NAME_LAST ="last_"+ chpt_name +"-{epoch}-{val_loss:.2f}-{val_F1:.3f}"
 
     # Sharpness Aware Minimization fails with 16-bit precision because
     # GradScaler does not support closure functions at the moment
@@ -249,6 +253,7 @@ if __name__ == "__main__":
     # add checkpoint callback only if you want to save model weights
     all_lightning_callbacks = [TimerCallback(params["epochs"], args.gpu_count)]
     if args.save_model:
+        all_lightning_callbacks.append(checkpoint_callback)
         all_lightning_callbacks.append(checkpoint_callback)
 
     # Configure Trainer
