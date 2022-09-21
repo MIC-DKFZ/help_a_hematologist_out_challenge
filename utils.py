@@ -81,13 +81,13 @@ def get_model(model_name, params):
     elif model_name == "IN_ResNet152":
         model = get_IN_resnet(params, "152", pretrained=True)
     elif model_name == "EfficientNetv2s":
-        custom_model=get_EfficientNetv2s(num_classes=num_classes,pretrained=True)
+        custom_model=get_EfficientNetv2s(num_classes=num_classes,pretrained=False)
         model = ModelConstructor(custom_model, params)
     elif model_name == "EfficientNetv2m":
-        custom_model = get_EfficientNetv2m(num_classes=num_classes, pretrained=True)
+        custom_model = get_EfficientNetv2m(num_classes=num_classes, pretrained=False)
         model = ModelConstructor(custom_model, params)
     elif model_name == "EfficientNetv2l":
-        custom_model = get_EfficientNetv2l(num_classes=num_classes, pretrained=True)
+        custom_model = get_EfficientNetv2l(num_classes=num_classes, pretrained=False)
         model = ModelConstructor(custom_model, params)
     # else:
 
