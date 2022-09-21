@@ -5,6 +5,9 @@ import os
 import mlflow.pytorch
 from base_model import TimerCallback
 from utils import detect_misconfigurations, get_model, get_params_to_log, get_params
+import cv2
+
+cv2.setNumThreads(1)
 
 
 if __name__ == "__main__":
@@ -170,23 +173,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "--suppress_progress_bar", action="store_true", help="Will suppress the Lightning progress bar during training"
     )
-    #parser.add_argument("--batch_size", type=int, default=128)
+    # parser.add_argument("--batch_size", type=int, default=128)
     ##### Domain Transfer #####
     parser.add_argument(
         "--target_domain_train",
         default=None,
         help=(
-            "Target Domain for train dataset, can be Matek_19, Acevedo_20 or WBC1. None by default which means no domain transfer is used"
+            "Target Domain for train dataset, can be Matek_19, Acevedo_20 or WBC1. None by default which means no"
+            " domain transfer is used"
         ),
     )
     parser.add_argument(
         "--target_domain_test",
         default=None,
         help=(
-            "Target Domain for test dataset, can be Matek_19, Acevedo_20 or WBC1. None by default which means no domain transfer is used"
+            "Target Domain for test dataset, can be Matek_19, Acevedo_20 or WBC1. None by default which means no domain"
+            " transfer is used"
         ),
     )
-
+    parser.add_argument("--fold", type=int, default=0)
 
     args = parser.parse_args()
 

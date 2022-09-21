@@ -1,4 +1,3 @@
-from prometheus_client import Metric
 import torch
 import torch.nn as nn
 import numpy as np
@@ -25,7 +24,7 @@ from datasets.hematology_data import HematologyDataset, SamplerCombiner
 class BaseModel(pl.LightningModule):
     def __init__(self, hypparams):
         super(BaseModel, self).__init__()
-        print(hypparams)
+        # print(hypparams)
         # Task
         self.task = "Classification" if not hypparams["regression"] else "Regression"
 
@@ -62,6 +61,7 @@ class BaseModel(pl.LightningModule):
         self.val_metrics = metrics.clone(prefix="val_")
 
         # Training Args
+        self.fold = hypparams["fold"]
         self.name = hypparams["name"]
         self.batch_size = hypparams["batch_size"]
         self.lr = hypparams["lr"]
@@ -100,8 +100,8 @@ class BaseModel(pl.LightningModule):
         self.balanced = hypparams["balanced"]
 
         # Domain Transfer
-        self.target_domain_train=hypparams["target_domain_train"]
-        self.target_domain_test=hypparams["target_domain_test"]
+        self.target_domain_train = hypparams["target_domain_train"]
+        self.target_domain_test = hypparams["target_domain_test"]
 
         os.makedirs(self.data_dir, exist_ok=True)
         self.download = False if any(os.scandir(self.data_dir)) else True
@@ -167,13 +167,22 @@ class BaseModel(pl.LightningModule):
             self.test_transform = test_transform(self.mean, self.std)
 
         elif self.dataset in ["Acevedo", "Matek", "AcevedoMatek"]:
-            from augmentation.policies.hematology import get_starter_test, get_starter_train
+            from augmentation.policies.hematology import (
+                get_starter_test,
+                get_starter_train,
+                get_bg_train_transform,
+                get_bg_val_transform,
+            )
 
             self.crop = hypparams["crop"]
 
             if self.aug == "starter":
                 self.transform_train = get_starter_train()
                 self.test_transform = get_starter_test()
+
+            elif self.aug == "bg":
+                self.transform_train = get_bg_train_transform(self.data_dir)
+                self.test_transform = get_bg_val_transform()
 
             elif self.aug.startswith("IN"):
                 self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
@@ -585,6 +594,7 @@ class BaseModel(pl.LightningModule):
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
+                fold=self.fold,
             )
 
         """if not self.random_batches:
@@ -703,6 +713,7 @@ class BaseModel(pl.LightningModule):
                 train=False,
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
+                fold=self.fold,
             )
 
         testloader = DataLoader(

@@ -23,7 +23,17 @@ dataset_image_size = {
 
 
 class HematologyDataset(Dataset):
-    def __init__(self, data_dir, dset, train=True, target_domain=None,transform=None, split_file=None, starter_crops=False):
+    def __init__(
+        self,
+        data_dir,
+        dset,
+        train=True,
+        transform=None,
+        split_file=None,
+        starter_crops=False,
+        target_domain=None,
+        fold=0,
+    ):
         """
         data_dir: Path to parent_dir where the 3 dataset folders are located
         dset: "acevedo" (train on acevedo, val on matek), "matek" (train on matek, val on acevedo), "combined" (20/80 split on full data)
@@ -59,35 +69,34 @@ class HematologyDataset(Dataset):
         if target_domain is None:
             acevedo_dir = os.path.join(data_dir, "Acevedo_20")
             matek_dir = os.path.join(data_dir, "Matek_19")
-            matek_file_type=".tiff"
-            acevedo_file_type=".jpg"
+            matek_file_type = ".tiff"
+            acevedo_file_type = ".jpg"
         else:
-            acevedo_dir = os.path.join(data_dir, "Acevedo_20"+"_"+target_domain)
-            matek_dir = os.path.join(data_dir, "Matek_19"+"_"+target_domain)
-            matek_file_type=".png"
-            acevedo_file_type=".png"
-
+            acevedo_dir = os.path.join(data_dir, "Acevedo_20" + "_" + target_domain)
+            matek_dir = os.path.join(data_dir, "Matek_19" + "_" + target_domain)
+            matek_file_type = ".png"
+            acevedo_file_type = ".png"
 
         if dset == "acevedo":
 
             if train:
-                self.files = glob.glob(os.path.join(acevedo_dir, "*/*"+acevedo_file_type))
+                self.files = glob.glob(os.path.join(acevedo_dir, "*/*" + acevedo_file_type))
             else:
-                self.files = glob.glob(os.path.join(matek_dir, "*/*"+matek_file_type))
+                self.files = glob.glob(os.path.join(matek_dir, "*/*" + matek_file_type))
 
         elif dset == "matek":
 
             if train:
-                self.files = glob.glob(os.path.join(matek_dir, "*/*"+matek_file_type))
+                self.files = glob.glob(os.path.join(matek_dir, "*/*" + matek_file_type))
             else:
-                self.files = glob.glob(os.path.join(acevedo_dir, "*/*"+acevedo_file_type))
+                self.files = glob.glob(os.path.join(acevedo_dir, "*/*" + acevedo_file_type))
 
         elif dset == "combined":
 
             f = open(split_file)
             json_data = json.load(f)
-            train_files = json_data[0]["train"]  # fold 0 only for now
-            val_files = json_data[0]["val"]  # fold 0 only for now
+            train_files = json_data[fold]["train"]
+            val_files = json_data[fold]["val"]
 
             if train:
                 self.files = [os.path.join(data_dir, i) for i in train_files]
