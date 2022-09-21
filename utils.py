@@ -235,6 +235,7 @@ def get_params(selected_data_dir, model_name, args, seed):
         "target_domain_train": args.target_domain_train,
         "target_domain_test": args.target_domain_test,
         "fold": args.fold,
+        "inference": False,
     }
 
     return params
