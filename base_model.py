@@ -25,174 +25,127 @@ class BaseModel(pl.LightningModule):
     def __init__(self, hypparams):
         super(BaseModel, self).__init__()
         # print(hypparams)
-        # Task
-        self.task = "Classification" if not hypparams["regression"] else "Regression"
 
-        # Metrics
-        self.metric_stepwise = False
-        metrics_dict = {}
+        if not hypparams["inference"]:
 
-        if self.task == "Classification":
+            # Task
+            self.task = "Classification" if not hypparams["regression"] else "Regression"
 
-            if "acc" in hypparams["metrics"]:
-                metrics_dict["Accuracy"] = Accuracy()
-            if "f1" in hypparams["metrics"]:
-                metrics_dict["F1"] = F1Score(average="macro", num_classes=hypparams["num_classes"], multiclass=None)
-            if "f1_per_class" in hypparams["metrics"]:
-                metrics_dict["F1_per_class"] = F1Score(
-                    average=None, num_classes=hypparams["num_classes"], multiclass=None
+            # Metrics
+            self.metric_stepwise = False
+            metrics_dict = {}
+
+            if self.task == "Classification":
+
+                if "acc" in hypparams["metrics"]:
+                    metrics_dict["Accuracy"] = Accuracy()
+                if "f1" in hypparams["metrics"]:
+                    metrics_dict["F1"] = F1Score(average="macro", num_classes=hypparams["num_classes"], multiclass=None)
+                if "f1_per_class" in hypparams["metrics"]:
+                    metrics_dict["F1_per_class"] = F1Score(
+                        average=None, num_classes=hypparams["num_classes"], multiclass=None
+                    )
+                if "pr" in hypparams["metrics"]:
+                    metrics_dict["Precision"] = Precision(
+                        average="macro", num_classes=hypparams["num_classes"], multiclass=None
+                    )
+                    metrics_dict["Recall"] = Recall(
+                        average="macro", num_classes=hypparams["num_classes"], multiclass=None
+                    )
+                if "top5acc" in hypparams["metrics"]:
+                    metrics_dict["Accuracy_top5"] = Accuracy(top_k=5)
+            elif self.task == "Regression":
+
+                if "mse" in hypparams["metrics"]:
+                    metrics_dict["MSE"] = MeanSquaredError()
+                if "mae" in hypparams["metrics"]:
+                    metrics_dict["MAE"] = MeanAbsoluteError()
+
+            metrics = MetricCollection(metrics_dict)
+            self.train_metrics = metrics.clone(prefix="train_")
+            self.val_metrics = metrics.clone(prefix="val_")
+
+            # Training Args
+            self.fold = hypparams["fold"]
+            self.name = hypparams["name"]
+            self.batch_size = hypparams["batch_size"]
+            self.lr = hypparams["lr"]
+            self.weight_decay = hypparams["weight_decay"]
+            self.optimizer = hypparams["optimizer"]
+            self.nesterov = hypparams["nesterov"]
+            self.sam = hypparams["sam"]
+            self.adaptive_sam = hypparams["adaptive_sam"]
+            self.scheduler = hypparams["scheduler"]
+            self.T_max = hypparams["T_max"]
+            self.warmstart = hypparams["warmstart"]
+            self.epochs = hypparams["epochs"]
+            # self.random_batches = hypparams["random_batches"]
+            self.sampler = hypparams["sampler"]
+            self.random_prob = hypparams["random_prob"]
+
+            # Regularization techniques
+            self.aug = hypparams["augmentation"]
+            self.mixup = hypparams["mixup"]
+            self.mixup_alpha = hypparams["mixup_alpha"]  # 0.2
+            self.label_smoothing = hypparams["label_smoothing"]  # 0.1
+            self.stochastic_depth = hypparams["stochastic_depth"]  # 0.1 (with higher resolution maybe 0.2)
+            self.resnet_dropout = hypparams["resnet_dropout"]  # 0.5
+            self.se = hypparams["squeeze_excitation"]
+            self.apply_shakedrop = hypparams["shakedrop"]
+            self.undecay_norm = hypparams["undecay_norm"]
+            self.zero_init_residual = hypparams["zero_init_residual"]
+
+            # Data and Dataloading
+            self.data_dir = hypparams["data_dir"]
+            self.dataset = hypparams["dataset"]
+            self.num_workers = hypparams["num_workers"]
+            self.input_dim = hypparams["input_dim"]
+            self.input_channels = hypparams["input_channels"]
+            self.num_classes = hypparams["num_classes"]
+            self.balanced = hypparams["balanced"]
+
+            # Domain Transfer
+            self.target_domain_train = hypparams["target_domain_train"]
+            self.target_domain_test = hypparams["target_domain_test"]
+
+            os.makedirs(self.data_dir, exist_ok=True)
+            self.download = False if any(os.scandir(self.data_dir)) else True
+
+            ################################################################################################################
+            # dataset specific
+            if self.dataset.startswith("CIFAR"):
+                self.mean, self.std = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
+                from augmentation.policies.cifar import (
+                    get_baseline,
+                    get_auto_augmentation,
+                    get_rand_augmentation,
+                    get_album,
+                    test_transform,
+                    get_baseline_cutout,
                 )
-            if "pr" in hypparams["metrics"]:
-                metrics_dict["Precision"] = Precision(
-                    average="macro", num_classes=hypparams["num_classes"], multiclass=None
-                )
-                metrics_dict["Recall"] = Recall(average="macro", num_classes=hypparams["num_classes"], multiclass=None)
-            if "top5acc" in hypparams["metrics"]:
-                metrics_dict["Accuracy_top5"] = Accuracy(top_k=5)
-        elif self.task == "Regression":
 
-            if "mse" in hypparams["metrics"]:
-                metrics_dict["MSE"] = MeanSquaredError()
-            if "mae" in hypparams["metrics"]:
-                metrics_dict["MAE"] = MeanAbsoluteError()
+                # according to https://arxiv.org/pdf/1708.04552v2.pdf a smaller cutout size should be used for more classes
+                cutout_size = 16 if self.dataset == "CIFAR10" else 8
 
-        metrics = MetricCollection(metrics_dict)
-        self.train_metrics = metrics.clone(prefix="train_")
-        self.val_metrics = metrics.clone(prefix="val_")
+                if self.aug == "baseline":
+                    self.transform_train = get_baseline(self.mean, self.std)
 
-        # Training Args
-        self.fold = hypparams["fold"]
-        self.name = hypparams["name"]
-        self.batch_size = hypparams["batch_size"]
-        self.lr = hypparams["lr"]
-        self.weight_decay = hypparams["weight_decay"]
-        self.optimizer = hypparams["optimizer"]
-        self.nesterov = hypparams["nesterov"]
-        self.sam = hypparams["sam"]
-        self.adaptive_sam = hypparams["adaptive_sam"]
-        self.scheduler = hypparams["scheduler"]
-        self.T_max = hypparams["T_max"]
-        self.warmstart = hypparams["warmstart"]
-        self.epochs = hypparams["epochs"]
-        # self.random_batches = hypparams["random_batches"]
-        self.sampler = hypparams["sampler"]
-        self.random_prob = hypparams["random_prob"]
+                elif self.aug == "baseline_cutout":
+                    self.transform_train = get_baseline_cutout(self.mean, self.std, cutout_size)
 
-        # Regularization techniques
-        self.aug = hypparams["augmentation"]
-        self.mixup = hypparams["mixup"]
-        self.mixup_alpha = hypparams["mixup_alpha"]  # 0.2
-        self.label_smoothing = hypparams["label_smoothing"]  # 0.1
-        self.stochastic_depth = hypparams["stochastic_depth"]  # 0.1 (with higher resolution maybe 0.2)
-        self.resnet_dropout = hypparams["resnet_dropout"]  # 0.5
-        self.se = hypparams["squeeze_excitation"]
-        self.apply_shakedrop = hypparams["shakedrop"]
-        self.undecay_norm = hypparams["undecay_norm"]
-        self.zero_init_residual = hypparams["zero_init_residual"]
+                elif self.aug == "autoaugment":
+                    self.transform_train = get_auto_augmentation(self.mean, self.std, cutout_size)
 
-        # Data and Dataloading
-        self.data_dir = hypparams["data_dir"]
-        self.dataset = hypparams["dataset"]
-        self.num_workers = hypparams["num_workers"]
-        self.input_dim = hypparams["input_dim"]
-        self.input_channels = hypparams["input_channels"]
-        self.num_classes = hypparams["num_classes"]
-        self.balanced = hypparams["balanced"]
+                elif self.aug == "randaugment":
+                    self.transform_train = get_rand_augmentation(self.mean, self.std, cutout_size)
 
-        # Domain Transfer
-        self.target_domain_train = hypparams["target_domain_train"]
-        self.target_domain_test = hypparams["target_domain_test"]
+                elif self.aug == "album":
+                    # Albumentation pipeline
+                    self.transform_train = get_album(self.mean, self.std)
 
-        os.makedirs(self.data_dir, exist_ok=True)
-        self.download = False if any(os.scandir(self.data_dir)) else True
-
-        ################################################################################################################
-        # dataset specific
-        if self.dataset.startswith("CIFAR"):
-            self.mean, self.std = (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)
-            from augmentation.policies.cifar import (
-                get_baseline,
-                get_auto_augmentation,
-                get_rand_augmentation,
-                get_album,
-                test_transform,
-                get_baseline_cutout,
-            )
-
-            # according to https://arxiv.org/pdf/1708.04552v2.pdf a smaller cutout size should be used for more classes
-            cutout_size = 16 if self.dataset == "CIFAR10" else 8
-
-            if self.aug == "baseline":
-                self.transform_train = get_baseline(self.mean, self.std)
-
-            elif self.aug == "baseline_cutout":
-                self.transform_train = get_baseline_cutout(self.mean, self.std, cutout_size)
-
-            elif self.aug == "autoaugment":
-                self.transform_train = get_auto_augmentation(self.mean, self.std, cutout_size)
-
-            elif self.aug == "randaugment":
-                self.transform_train = get_rand_augmentation(self.mean, self.std, cutout_size)
-
-            elif self.aug == "album":
-                # Albumentation pipeline
-                self.transform_train = get_album(self.mean, self.std)
-
-            self.test_transform = test_transform(self.mean, self.std)
-
-        elif self.dataset == "Imagenet":
-            self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
-            from augmentation.policies.imagenet import (
-                get_baseline,
-                test_transform,
-                get_auto_augmentation,
-                get_baseline_cutout,
-                get_rand_augmentation,
-            )
-
-            cutout_size = 112
-
-            if self.aug == "baseline":
-                self.transform_train = get_baseline(self.mean, self.std)
-
-            elif self.aug == "baseline_cutout":
-                self.transform_train = get_baseline_cutout(self.mean, self.std, cutout_size)
-
-            elif self.aug == "autoaugment":
-                self.transform_train = get_auto_augmentation(self.mean, self.std)
-
-            elif self.aug == "randaugment":
-                self.transform_train = get_rand_augmentation(self.mean, self.std)
-
-            self.test_transform = test_transform(self.mean, self.std)
-
-        elif self.dataset in ["Acevedo", "Matek", "AcevedoMatek"]:
-            from augmentation.policies.hematology import (
-                get_starter_test,
-                get_starter_train,
-                get_bg_train_transform,
-                get_bg_val_transform,
-            )
-
-            self.crop = hypparams["crop"]
-
-            if self.aug == "starter":
-                self.transform_train = get_starter_train()
-                self.test_transform = get_starter_test()
-
-            elif self.aug=="customRandAugment":
-                from augmentation.policies.imagenet import test_transform
-
-                from augmentation.policies.hematology import get_customRandAugment
-                self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
-                self.transform_train = get_customRandAugment()
                 self.test_transform = test_transform(self.mean, self.std)
 
-            elif self.aug == "bg":
-                self.transform_train = get_bg_train_transform(self.data_dir)
-                self.test_transform = get_bg_val_transform()
-
-            elif self.aug.startswith("IN"):
+            elif self.dataset == "Imagenet":
                 self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
                 from augmentation.policies.imagenet import (
                     get_baseline,
@@ -202,39 +155,92 @@ class BaseModel(pl.LightningModule):
                     get_rand_augmentation,
                 )
 
-                cutout_size = 64
+                cutout_size = 112
 
-                if self.aug == "IN_baseline":
+                if self.aug == "baseline":
                     self.transform_train = get_baseline(self.mean, self.std)
 
-                elif self.aug == "IN_baseline_cutout":
+                elif self.aug == "baseline_cutout":
                     self.transform_train = get_baseline_cutout(self.mean, self.std, cutout_size)
 
-                elif self.aug == "IN_autoaugment":
+                elif self.aug == "autoaugment":
                     self.transform_train = get_auto_augmentation(self.mean, self.std)
 
-                elif self.aug == "IN_randaugment":
+                elif self.aug == "randaugment":
                     self.transform_train = get_rand_augmentation(self.mean, self.std)
 
                 self.test_transform = test_transform(self.mean, self.std)
 
-        ################################################################################################################
+            elif self.dataset in ["Acevedo", "Matek", "AcevedoMatek"]:
+                from augmentation.policies.hematology import (
+                    get_starter_test,
+                    get_starter_train,
+                    get_bg_train_transform,
+                    get_bg_val_transform,
+                )
 
-        # switch to manual optimization for Sharpness Aware Minimization
-        if self.sam:
-            self.automatic_optimization = False
+                self.crop = hypparams["crop"]
 
-        # Loss
-        if self.task == "Classification":
-            self.criterion = nn.CrossEntropyLoss(label_smoothing=self.label_smoothing)
-        elif self.task == "Regression":
-            self.criterion = nn.MSELoss()
+                if self.aug == "starter":
+                    self.transform_train = get_starter_train()
+                    self.test_transform = get_starter_test()
 
-        # Inference
-        self.softmax = nn.Softmax(dim=1)
+                elif self.aug == "customRandAugment":
+                    from augmentation.policies.imagenet import test_transform
 
-        # Seed
-        self.seed = hypparams["seed"]
+                    from augmentation.policies.hematology import get_customRandAugment
+
+                    self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                    self.transform_train = get_customRandAugment()
+                    self.test_transform = test_transform(self.mean, self.std)
+
+                elif self.aug == "bg":
+                    self.transform_train = get_bg_train_transform(self.data_dir)
+                    self.test_transform = get_bg_val_transform()
+
+                elif self.aug.startswith("IN"):
+                    self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                    from augmentation.policies.imagenet import (
+                        get_baseline,
+                        test_transform,
+                        get_auto_augmentation,
+                        get_baseline_cutout,
+                        get_rand_augmentation,
+                    )
+
+                    cutout_size = 64
+
+                    if self.aug == "IN_baseline":
+                        self.transform_train = get_baseline(self.mean, self.std)
+
+                    elif self.aug == "IN_baseline_cutout":
+                        self.transform_train = get_baseline_cutout(self.mean, self.std, cutout_size)
+
+                    elif self.aug == "IN_autoaugment":
+                        self.transform_train = get_auto_augmentation(self.mean, self.std)
+
+                    elif self.aug == "IN_randaugment":
+                        self.transform_train = get_rand_augmentation(self.mean, self.std)
+
+                    self.test_transform = test_transform(self.mean, self.std)
+
+            ################################################################################################################
+
+            # switch to manual optimization for Sharpness Aware Minimization
+            if self.sam:
+                self.automatic_optimization = False
+
+            # Loss
+            if self.task == "Classification":
+                self.criterion = nn.CrossEntropyLoss(label_smoothing=self.label_smoothing)
+            elif self.task == "Regression":
+                self.criterion = nn.MSELoss()
+
+            # Inference
+            self.softmax = nn.Softmax(dim=1)
+
+            # Seed
+            self.seed = hypparams["seed"]
 
     def forward(self, x):
         pass
