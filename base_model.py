@@ -180,6 +180,14 @@ class BaseModel(pl.LightningModule):
                 self.transform_train = get_starter_train()
                 self.test_transform = get_starter_test()
 
+            elif self.aug=="customRandAugment":
+                from augmentation.policies.imagenet import test_transform
+
+                from augmentation.policies.hematology import get_customRandAugment
+                self.mean, self.std = (0.485, 0.456, 0.406), (0.229, 0.224, 0.225)
+                self.transform_train = get_customRandAugment()
+                self.test_transform = test_transform(self.mean, self.std)
+
             elif self.aug == "bg":
                 self.transform_train = get_bg_train_transform(self.data_dir)
                 self.test_transform = get_bg_val_transform()
