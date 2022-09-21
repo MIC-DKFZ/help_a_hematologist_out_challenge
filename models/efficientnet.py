@@ -1,6 +1,7 @@
 from efficientnet_pytorch import EfficientNet
 from base_model import BaseModel
-
+from torchvision.models.efficientnet import efficientnet_v2_s,efficientnet_v2_m,efficientnet_v2_l
+from torch import nn
 
 class BaseEfficientNet(BaseModel):
 
@@ -14,6 +15,33 @@ class BaseEfficientNet(BaseModel):
         out = self.network(x)
         return out
 
+
+def get_EfficientNetv2s(num_classes=10,pretrained=True, hypparams={}):
+    if pretrained:
+        model = efficientnet_v2_s(weights="EfficientNet_V2_S_Weights.DEFAULT")
+    else:
+        model = efficientnet_v2_s()
+    model.classifier[1] = nn.Linear(in_features=1280, out_features=num_classes, bias=True)
+
+    return model
+
+def get_EfficientNetv2m(num_classes=10,pretrained=True, hypparams={}):
+    if pretrained:
+        model = efficientnet_v2_m(weights="EfficientNet_V2_M_Weights.DEFAULT")
+    else:
+        model = efficientnet_v2_m()
+    model.classifier[1] = nn.Linear(in_features=1280, out_features=num_classes, bias=True)
+
+    return model
+
+def get_EfficientNetv2l(num_classes=10,pretrained=True, hypparams={}):
+    if pretrained:
+        model = efficientnet_v2_l(weights="EfficientNet_V2_L_Weights.DEFAULT")
+    else:
+        model = efficientnet_v2_l()
+    model.classifier[1] = nn.Linear(in_features=1280, out_features=num_classes, bias=True)
+
+    return model
 
 def EfficientNetL2(num_classes=10, hypparams={}):
     return BaseEfficientNet(num_classes, hypparams, 'l2')

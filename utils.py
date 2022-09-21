@@ -39,6 +39,9 @@ registered_models = [
     "WRN2810",
     "PyramidNet110",
     "PyramidNet272",
+    "EfficientNetv2s",
+    "EfficientNetv2m",
+    "EfficientNetv2l",
 ]
 
 registered_datasets = ["CIFAR10", "CIFAR100", "Imagenet", "Acevedo", "Matek", "AcevedoMatek"]
@@ -77,7 +80,15 @@ def get_model(model_name, params):
         model = get_IN_resnet(params, "101", pretrained=True)
     elif model_name == "IN_ResNet152":
         model = get_IN_resnet(params, "152", pretrained=True)
-
+    elif model_name == "EfficientNetv2s":
+        custom_model=get_EfficientNetv2s(num_classes=num_classes,pretrained=True)
+        model = ModelConstructor(custom_model, params)
+    elif model_name == "EfficientNetv2m":
+        custom_model = get_EfficientNetv2m(num_classes=num_classes, pretrained=True)
+        model = ModelConstructor(custom_model, params)
+    elif model_name == "EfficientNetv2l":
+        custom_model = get_EfficientNetv2l(num_classes=num_classes, pretrained=True)
+        model = ModelConstructor(custom_model, params)
     # else:
 
     # if model_name == 'ResNet18':
