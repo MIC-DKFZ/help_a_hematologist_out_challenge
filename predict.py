@@ -60,6 +60,7 @@ class HematologyDataset_Testset(Dataset):
         ]
 
         self.files = glob.glob(os.path.join(data_dir, "DATA-VAL/*"))
+        # self.files = glob.glob(os.path.join(data_dir, "*"))  # val on train
 
     def __len__(self):
         return len(self.files)
@@ -150,7 +151,7 @@ if __name__ == "__main__":
     data = HematologyDataset_Testset(args.data_dir, get_bg_val_transform())
     testloader = DataLoader(
         data,
-        batch_size=256,
+        batch_size=512,
         shuffle=False,
         num_workers=12,
         pin_memory=True,
@@ -190,13 +191,18 @@ if __name__ == "__main__":
             for img, filename in testloader:
 
                 img = img.to("cuda")
+                # print(img.mean())
+                # print(img[0, :, 100, 100])
 
                 output = model(img)
                 output += model(torch.flip(img, (2,)))
                 output += model(torch.flip(img, (3,)))
                 output += model(torch.flip(img, (2, 3)))
                 output /= 4
+                # print(output.shape)
                 output = torch.softmax(output, dim=1)
+                # print(output.shape)
+                # print(np.bincount(output.cpu().argmax(1), minlength=11))
 
                 # model_preds.append(output, filename)
 
@@ -227,13 +233,17 @@ if __name__ == "__main__":
 
     # merge rows with mean to aggregate softmax
     df = df.groupby("Image").agg("mean").reset_index()
+
     # print(df)
     # argmax to obtain pred
-    softmaxes = df[df.columns.difference(["Image"])].to_numpy()
+    # softmaxes = df[df.columns.difference(["Image"])].to_numpy()
+    df["LabelID"] = df[df.columns.difference(["Image"])].idxmax(axis="columns").replace({"softmax_": ""}, regex=True)
+    df["LabelID"] = pd.to_numeric(df["LabelID"])
 
-    prediction = softmaxes.argmax(1)
-    print(np.bincount(prediction))
+    """prediction = softmaxes.argmax(1)
+    print(np.bincount(prediction, minlength=11))
     df["LabelID"] = prediction
+    print(df["LabelID"].value_counts())"""
     # print(df)
 
     label_map_reverse = {
@@ -250,9 +260,11 @@ if __name__ == "__main__":
         10: "lymphocyte_typical",
     }
 
-    df["Label"] = [label_map_reverse[i] for i in df["LabelID"]]
+    df["Label"] = df["LabelID"].replace(label_map_reverse, regex=True)
 
     df = df[["Image", "Label", "LabelID"]]
+    print(df["LabelID"].value_counts())
+    print(df["Label"].value_counts())
 
     os.makedirs(save_dir, exist_ok=True)
     df.to_csv(os.path.join(save_dir, "submission.csv"))

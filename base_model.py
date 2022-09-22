@@ -379,9 +379,7 @@ class BaseModel(pl.LightningModule):
             sync_dist=True if self.trainer.num_devices > 1 else False,
         )
 
-
     def on_train_epoch_end(self) -> None:
-
 
         metrics_res = self.train_metrics.compute()
         if "train_F1_per_class" in metrics_res.keys():
