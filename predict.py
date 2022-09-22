@@ -22,11 +22,7 @@ import pandas as pd
 
 
 class HematologyDataset_Testset(Dataset):
-    def __init__(
-        self,
-        data_dir,
-        transform=None,
-    ):
+    def __init__(self, data_dir, transform=None, dset="val"):
         """
         data_dir: Path to parent_dir where the 3 dataset folders are located
         dset: "acevedo" (train on acevedo, val on matek), "matek" (train on matek, val on acevedo), "combined" (20/80 split on full data)
@@ -59,7 +55,8 @@ class HematologyDataset_Testset(Dataset):
             [0.18629327, 0.24896133, 0.16334666],
         ]
 
-        self.files = glob.glob(os.path.join(data_dir, "DATA-VAL/*"))
+        self.files = glob.glob(os.path.join(data_dir, "DATA-VAL/*" if dset == "val" else "DATA-TEST/*"))
+
         # self.files = glob.glob(os.path.join(data_dir, "*"))  # val on train
 
     def __len__(self):
@@ -89,6 +86,44 @@ def load_IN_resnet(cp):
         pretrained_dict = pretrained_dict["state_dict"]
     pretrained_dict = {
         k.replace(".model", "").replace("module.", "").replace("backbone.", ""): v for k, v in pretrained_dict.items()
+    }
+
+    model.load_state_dict(pretrained_dict)
+
+    return model
+
+
+def load_effnetb0(cp):
+
+    params = {"num_classes": 11, "inference": True}
+
+    model = EfficientNetB0(num_classes=11, hypparams=params)
+    pretrained_dict = torch.load(cp, map_location={"cuda:0": "cpu"})
+
+    if "state_dict" in pretrained_dict.keys():
+        pretrained_dict = pretrained_dict["state_dict"]
+    pretrained_dict = {
+        k.replace(".model", "").replace("module.", "").replace("backbone.", ""): v for k, v in pretrained_dict.items()
+    }
+
+    model.load_state_dict(pretrained_dict)
+
+    return model
+
+
+def load_effnetV2m(cp):
+
+    model = get_EfficientNetv2m(num_classes=11, pretrained=False)
+    pretrained_dict = torch.load(cp, map_location={"cuda:0": "cpu"})
+
+    if "state_dict" in pretrained_dict.keys():
+        pretrained_dict = pretrained_dict["state_dict"]
+    # print(pretrained_dict.keys())
+    # print("##################################################")
+    # print(model.state_dict().keys())
+    # quit()
+    pretrained_dict = {
+        k.replace("model.", "").replace("module.", "").replace("backbone.", ""): v for k, v in pretrained_dict.items()
     }
 
     model.load_state_dict(pretrained_dict)
@@ -138,17 +173,21 @@ if __name__ == "__main__":
         "--data_dir",
         type=str,
         help="path to data",
-        default="/home/s522r/Desktop/hida_challenge/Datasets/WBC1_WBC1",
+        default="/home/s522r/Desktop/hida_challenge/Datasets",
     )
     parser.add_argument("--save_dir", default="/home/s522r/Desktop/cluster_results/HematologyData/preds")
+    parser.add_argument("--set", default="val")
 
     args = parser.parse_args()
     cp_dir = args.cp_dir
     save_dir = args.save_dir
+    dset = args.set
 
     checkpoints = glob.glob(os.path.join(cp_dir, "*.ckpt"))
 
-    data = HematologyDataset_Testset(args.data_dir, get_bg_val_transform())
+    data = HematologyDataset_Testset(
+        os.path.join(args.data_dir, "WBC1" if dset == "val" else "WBC2"), get_bg_val_transform(), dset=dset
+    )
     testloader = DataLoader(
         data,
         batch_size=512,
@@ -183,6 +222,12 @@ if __name__ == "__main__":
 
         elif "RN34" in cp:
             model = load_resnet(cp)
+
+        elif "efnetB0" in cp:
+            model = load_effnetb0(cp)
+
+        elif "efnetV2m" in cp:
+            model = load_effnetV2m(cp)
 
         model = model.to("cuda")
         model.eval()
@@ -267,6 +312,6 @@ if __name__ == "__main__":
     print(df["Label"].value_counts())
 
     os.makedirs(save_dir, exist_ok=True)
-    df.to_csv(os.path.join(save_dir, "submission.csv"))
+    df.to_csv(os.path.join(save_dir, "fppRN34_{}_submission.csv".format(dset)))
 
     print("Done")

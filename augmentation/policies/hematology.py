@@ -3,7 +3,7 @@ import torchvision
 from torchvision import transforms
 from PIL import Image
 import numpy as np
-from batchgenerators.transforms.abstract_transforms import Compose#
+from batchgenerators.transforms.abstract_transforms import Compose
 from batchgenerators.transforms.abstract_transforms import AbstractTransform
 from batchgenerators.transforms.color_transforms import (
     ContrastAugmentationTransform,
@@ -442,10 +442,10 @@ def old_get_starter_test():
 
     return test_transform
 
+
 ### Custom Randaugment by Lars ###
 def _apply_op(
-        img: Tensor, op_name: str, magnitude: float, interpolation: InterpolationMode,
-        fill: Optional[List[float]]
+    img: Tensor, op_name: str, magnitude: float, interpolation: InterpolationMode, fill: Optional[List[float]]
 ):
     if op_name == "ShearX":
         # magnitude should be arctan(magnitude)
@@ -532,14 +532,19 @@ def _apply_op(
 
 
 class customRandAugment(torchvision.transforms.RandAugment):
-    def __init__(self, num_ops: int = 2, magnitude: int = 9, num_magnitude_bins: int = 31,
-                 interpolation: InterpolationMode = InterpolationMode.NEAREST,
-                 fill: Optional[List[float]] = None, random_range=True) -> None:
+    def __init__(
+        self,
+        num_ops: int = 2,
+        magnitude: int = 9,
+        num_magnitude_bins: int = 31,
+        interpolation: InterpolationMode = InterpolationMode.NEAREST,
+        fill: Optional[List[float]] = None,
+        random_range=True,
+    ) -> None:
         super().__init__()
         self.random_range = random_range
 
-    def _augmentation_space(self, num_bins: int, image_size: Tuple[int, int]) -> Dict[
-        str, Tuple[Tensor, bool]]:
+    def _augmentation_space(self, num_bins: int, image_size: Tuple[int, int]) -> Dict[str, Tuple[Tensor, bool]]:
         return {
             # op_name: (magnitudes, signed)
             "Identity": (torch.tensor(0.0), False),
@@ -585,10 +590,11 @@ class customRandAugment(torchvision.transforms.RandAugment):
                 magnitude *= -1.0
             if self.random_range:
                 magnitude = random.uniform(0, magnitude)
-            #print(op_name, magnitude)
+            # print(op_name, magnitude)
             img = _apply_op(img, op_name, magnitude, interpolation=self.interpolation, fill=fill)
 
         return img
+
 
 def get_customRandAugment():
     resize = 224
