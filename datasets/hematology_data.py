@@ -33,6 +33,7 @@ class HematologyDataset(Dataset):
         starter_crops=False,
         target_domain=None,
         fold=0,
+        preprocessed=False,
     ):
         """
         data_dir: Path to parent_dir where the 3 dataset folders are located
@@ -67,8 +68,12 @@ class HematologyDataset(Dataset):
             [0.18629327, 0.24896133, 0.16334666],
         ]
         if target_domain is None:
-            acevedo_dir = os.path.join(data_dir, "Acevedo_20")
-            matek_dir = os.path.join(data_dir, "Matek_19")
+            if not preprocessed:
+                acevedo_dir = os.path.join(data_dir, "Acevedo_20")
+                matek_dir = os.path.join(data_dir, "Matek_19")
+            else:
+                acevedo_dir = os.path.join(data_dir, "Acevedo_20_meanNormalized")
+                matek_dir = os.path.join(data_dir, "Matek_19_meanNormalized")
             matek_file_type = ".tiff"
             acevedo_file_type = ".jpg"
         else:

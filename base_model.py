@@ -103,6 +103,7 @@ class BaseModel(pl.LightningModule):
             self.input_channels = hypparams["input_channels"]
             self.num_classes = hypparams["num_classes"]
             self.balanced = hypparams["balanced"]
+            self.preprocessed = hypparams["preprocessed"]
 
             # Domain Transfer
             self.target_domain_train = hypparams["target_domain_train"]
@@ -588,6 +589,7 @@ class BaseModel(pl.LightningModule):
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
+                preprocessed=self.preprocessed,
             )
 
         elif self.dataset == "Matek":
@@ -599,6 +601,7 @@ class BaseModel(pl.LightningModule):
                 transform=self.transform_train,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
+                preprocessed=self.preprocessed,
             )
         elif self.dataset == "AcevedoMatek":
             trainset = HematologyDataset(
@@ -610,6 +613,7 @@ class BaseModel(pl.LightningModule):
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 starter_crops=self.crop,
                 fold=self.fold,
+                preprocessed=self.preprocessed,
             )
 
         """if not self.random_batches:
@@ -709,6 +713,7 @@ class BaseModel(pl.LightningModule):
                 train=False,
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
+                preprocessed=self.preprocessed,
             )
 
         elif self.dataset == "Matek":
@@ -719,6 +724,7 @@ class BaseModel(pl.LightningModule):
                 train=False,
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
+                preprocessed=self.preprocessed,
             )
         elif self.dataset == "AcevedoMatek":
             testset = HematologyDataset(
@@ -729,6 +735,7 @@ class BaseModel(pl.LightningModule):
                 transform=self.test_transform,
                 split_file=os.path.join(self.data_dir, "splits.json"),
                 fold=self.fold,
+                preprocessed=self.preprocessed,
             )
 
         testloader = DataLoader(

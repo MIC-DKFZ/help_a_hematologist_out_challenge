@@ -81,7 +81,7 @@ def get_model(model_name, params):
     elif model_name == "IN_ResNet152":
         model = get_IN_resnet(params, "152", pretrained=True)
     elif model_name == "EfficientNetv2s":
-        custom_model=get_EfficientNetv2s(num_classes=num_classes,pretrained=False)
+        custom_model = get_EfficientNetv2s(num_classes=num_classes, pretrained=False)
         model = ModelConstructor(custom_model, params)
     elif model_name == "EfficientNetv2m":
         custom_model = get_EfficientNetv2m(num_classes=num_classes, pretrained=False)
@@ -236,6 +236,7 @@ def get_params(selected_data_dir, model_name, args, seed):
         "target_domain_test": args.target_domain_test,
         "fold": args.fold,
         "inference": False,
+        "preprocessed": args.preprocessed,
     }
 
     return params
@@ -285,6 +286,7 @@ def get_params_to_log(params, model_name):
         "target_domain_train": params["target_domain_train"],
         "target_domain_test": params["target_domain_test"],
         "fold": params["fold"],
+        "preprocessed": params["preprocessed"],
     }
 
     return params_to_log
