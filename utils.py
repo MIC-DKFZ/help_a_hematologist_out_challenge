@@ -237,6 +237,7 @@ def get_params(selected_data_dir, model_name, args, seed):
         "fold": args.fold,
         "inference": False,
         "preprocessed": args.preprocessed,
+        "bg_loader": args.bg_loader,
     }
 
     return params
@@ -287,6 +288,7 @@ def get_params_to_log(params, model_name):
         "target_domain_test": params["target_domain_test"],
         "fold": params["fold"],
         "preprocessed": params["preprocessed"],
+        "bg_loader": params["bg_loader"],
     }
 
     return params_to_log

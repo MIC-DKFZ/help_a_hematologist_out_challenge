@@ -19,6 +19,7 @@ from timm.optim import RMSpropTF
 from augmentation.mixup import mixup_data, mixup_criterion
 
 from datasets.hematology_data import HematologyDataset, SamplerCombiner
+from fabians_dataloading import get_dataloaders_fabian
 
 
 class BaseModel(pl.LightningModule):
@@ -104,6 +105,7 @@ class BaseModel(pl.LightningModule):
             self.num_classes = hypparams["num_classes"]
             self.balanced = hypparams["balanced"]
             self.preprocessed = hypparams["preprocessed"]
+            self.fabis_loader = hypparams["bg_loader"]
 
             # Domain Transfer
             self.target_domain_train = hypparams["target_domain_train"]
@@ -248,7 +250,10 @@ class BaseModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        x, y = batch
+        try:
+            x, y = batch
+        except:
+            x, y = batch["data"], batch["target"]
 
         """unique, counts = np.unique(y.cpu(), return_counts=True)
         print(unique)
@@ -328,7 +333,10 @@ class BaseModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        x, y = batch
+        try:
+            x, y = batch
+        except:
+            x, y = batch["data"], batch["target"]
         y_hat = self(x)
 
         if self.num_classes == 1:
@@ -691,6 +699,17 @@ class BaseModel(pl.LightningModule):
                 sampler=combined_sampler,
             )
 
+        if self.fabis_loader:
+            if self.dataset == "Acevedo":
+                setting = "acevedo_to_matek"
+            elif self.dataset == "Matek":
+                setting = "matek_to_acevedo"
+            elif self.dataset == "AcevedoMatek":
+                setting = "fold_{}".format(self.fold)
+            trainloader, _ = get_dataloaders_fabian(
+                self.data_dir, (288, 288), (400, 400), self.batch_size, self.num_workers, train_setting=setting
+            )
+
         return trainloader
 
     def val_dataloader(self):
@@ -747,6 +766,17 @@ class BaseModel(pl.LightningModule):
             worker_init_fn=seed_worker,
             persistent_workers=True,
         )
+
+        if self.fabis_loader:
+            if self.dataset == "Acevedo":
+                setting = "acevedo_to_matek"
+            elif self.dataset == "Matek":
+                setting = "matek_to_acevedo"
+            elif self.dataset == "AcevedoMatek":
+                setting = "fold_{}".format(self.fold)
+            _, testloader = get_dataloaders_fabian(
+                self.data_dir, (288, 288), (400, 400), self.batch_size, self.num_workers, train_setting=setting
+            )
 
         return testloader
 

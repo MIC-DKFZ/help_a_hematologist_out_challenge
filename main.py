@@ -141,6 +141,7 @@ if __name__ == "__main__":
     parser.add_argument("--sampler", type=str, default="full")
     parser.add_argument("--random_prob", default=2 / 3, type=float)
     parser.add_argument("--preprocessed", action="store_true")
+    parser.add_argument("--bg_loader", action="store_true")
 
     ##### Directories #####
     parser.add_argument(
