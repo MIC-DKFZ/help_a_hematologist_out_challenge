@@ -14,7 +14,7 @@ This repository is based on the Image Classification and Regression Framework by
 
 Similar frameworks are available for [semantic segmentation](https://github.com/MIC-DKFZ/semantic_segmentation) and [object detection](https://github.com/MIC-DKFZ/generalized_yolov5)!
 
-For reproducing our model training run all 5 folds:
+For reproducing our model training you need to place the ```splits.json``` in the data directory and then run all 5 folds:
 ```
 python main.py ResNet34 --data AcevedoMatek --num_classes 11 --augmentation bg --scheduler CosineAnneal --metrics f1 f1_per_class --batch_size 128 --num_workers 12 --epochs 500 --lr 0.1 --sampler weighted_and_random --balanced --random_prob 0.66 --fold 0 --save_model --chpt_name RN34_fold0
 
