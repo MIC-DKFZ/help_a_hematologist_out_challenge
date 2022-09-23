@@ -72,13 +72,11 @@ def get_bg_train_transform(data_dir):
     patch_size = (288, 288)
 
     percentage_darkest_pixels = 20
-    # this runs in like 1 second so it's fine to do this everytime
+
     hsv_wbc = collect_wbc_hsv(data_dir, percentage_darkest_pixels)
 
     tr_transforms = TorchCompose(
         [
-            # we need to apply hue jitter first because we need to have black pixels where we padded. Otherwise it's
-            # good night
             OneOfTransformPerSample(
                 [
                     RandomHueTransform(
@@ -88,7 +86,6 @@ def get_bg_train_transform(data_dir):
                 ],
                 relevant_keys=["data"],
             ),
-            # das ist mal ein Brett. Mach das zuerst junge sonst haste nen CPU bottleneck wa
             SpatialTransform_2(
                 patch_size,
                 [(i // 2 + 30) for i in patch_size],
@@ -96,7 +93,7 @@ def get_bg_train_transform(data_dir):
                 deformation_scale=(0, 0.25),
                 do_rotation=True,  # default is full rotations
                 do_scale=True,
-                scale=(0.5, 2),  # need to go overboard with this I think
+                scale=(0.5, 2),
                 border_mode_data="constant",
                 order_data=1,
                 random_crop=True,

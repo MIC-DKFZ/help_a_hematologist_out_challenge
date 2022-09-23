@@ -312,6 +312,6 @@ if __name__ == "__main__":
     print(df["Label"].value_counts())
 
     os.makedirs(save_dir, exist_ok=True)
-    df.to_csv(os.path.join(save_dir, "fppRN34_{}_submission.csv".format(dset)))
+    df.to_csv(os.path.join(save_dir, "RN34_{}_submission.csv".format(dset)))
 
     print("Done")

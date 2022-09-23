@@ -19,7 +19,6 @@ from timm.optim import RMSpropTF
 from augmentation.mixup import mixup_data, mixup_criterion
 
 from datasets.hematology_data import HematologyDataset, SamplerCombiner
-from fabians_dataloading import get_dataloaders_fabian
 
 
 class BaseModel(pl.LightningModule):
@@ -105,7 +104,6 @@ class BaseModel(pl.LightningModule):
             self.num_classes = hypparams["num_classes"]
             self.balanced = hypparams["balanced"]
             self.preprocessed = hypparams["preprocessed"]
-            self.fabis_loader = hypparams["bg_loader"]
 
             # Domain Transfer
             self.target_domain_train = hypparams["target_domain_train"]
@@ -250,14 +248,7 @@ class BaseModel(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        try:
-            x, y = batch
-        except:
-            x, y = batch["data"], batch["target"]
-
-        """unique, counts = np.unique(y.cpu(), return_counts=True)
-        print(unique)
-        print(counts)"""
+        x, y = batch
 
         if self.mixup:
             inputs, targets_a, targets_b, lam = mixup_data(x, y, alpha=self.mixup_alpha)
@@ -303,11 +294,6 @@ class BaseModel(pl.LightningModule):
             prog_bar=True,
             sync_dist=True if self.trainer.num_devices > 1 else False,
         )
-
-        # predict and save metrics
-        """if self.task == "Classification":
-            with torch.no_grad():
-                y_hat = self.softmax(y_hat)"""
 
         if torch.isnan(y_hat).any():
             print("######################################### Model predicts NaNs!")
@@ -355,9 +341,6 @@ class BaseModel(pl.LightningModule):
             sync_dist=True if self.trainer.num_devices > 1 else False,
         )
 
-        # predict and save metrics
-        """if self.task == "Classification":
-            y_hat = self.softmax(y_hat)"""
         if self.metric_stepwise:
             metrics_res = self.val_metrics(y_hat, y)
             if "val_F1_per_class" in metrics_res.keys():
@@ -414,7 +397,6 @@ class BaseModel(pl.LightningModule):
         from models.pyramidnet import BasicBlock as BasicBlock_pyramid, Bottleneck as Bottleneck_pyramid
         from models.preact_resnet import PreActBlock, PreActBottleneck
 
-        # TODO: disable weight init if model is pretrained once pretrained models are enabled
         if "IN" not in self.name:
             print("Initializing weights")
             for m in self.modules():
@@ -624,30 +606,6 @@ class BaseModel(pl.LightningModule):
                 preprocessed=self.preprocessed,
             )
 
-        """if not self.random_batches:
-            trainloader = DataLoader(
-                trainset,
-                batch_size=self.batch_size,
-                shuffle=True,
-                num_workers=self.num_workers,
-                pin_memory=True,
-                worker_init_fn=seed_worker,
-                persistent_workers=True,
-            )
-
-        else:
-            print("RandomSampler with replacement is used!")
-            random_sampler = RandomSampler(trainset, replacement=True, num_samples=len(trainset))
-            trainloader = DataLoader(
-                trainset,
-                batch_size=self.batch_size,
-                num_workers=self.num_workers,
-                pin_memory=True,
-                worker_init_fn=seed_worker,
-                persistent_workers=True,
-                sampler=random_sampler,
-            )"""
-
         if self.sampler == "full":
             trainloader = DataLoader(
                 trainset,
@@ -697,17 +655,6 @@ class BaseModel(pl.LightningModule):
                 worker_init_fn=seed_worker,
                 persistent_workers=True,
                 sampler=combined_sampler,
-            )
-
-        if self.fabis_loader:
-            if self.dataset == "Acevedo":
-                setting = "acevedo_to_matek"
-            elif self.dataset == "Matek":
-                setting = "matek_to_acevedo"
-            elif self.dataset == "AcevedoMatek":
-                setting = "fold_{}".format(self.fold)
-            trainloader, _ = get_dataloaders_fabian(
-                self.data_dir, (288, 288), (400, 400), self.batch_size, self.num_workers, train_setting=setting
             )
 
         return trainloader
@@ -766,17 +713,6 @@ class BaseModel(pl.LightningModule):
             worker_init_fn=seed_worker,
             persistent_workers=True,
         )
-
-        if self.fabis_loader:
-            if self.dataset == "Acevedo":
-                setting = "acevedo_to_matek"
-            elif self.dataset == "Matek":
-                setting = "matek_to_acevedo"
-            elif self.dataset == "AcevedoMatek":
-                setting = "fold_{}".format(self.fold)
-            _, testloader = get_dataloaders_fabian(
-                self.data_dir, (288, 288), (400, 400), self.batch_size, self.num_workers, train_setting=setting
-            )
 
         return testloader
 
