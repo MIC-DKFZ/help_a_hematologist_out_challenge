@@ -26,7 +26,7 @@ For inference run:
 ```
 python predict.py --cp_dir path/to/checkpoint_dir --data_dir path/to/hematology_data --save_dir path/where/to/save/results --set val
 ```
-If you want to predict the test data, use ```--set test``` instead.
+If you want to predict the test data use ```--set test``` instead.
 
 
 
