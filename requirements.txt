@@ -11,4 +11,13 @@ randaugment>=1.0.2
 pillow>=9.2.0
 efficientnet-pytorch>=0.7.1
 madgrad>=1.2
-git+https://gitlab.hzdr.de/hi-dkfz/applied-computer-vision-lab/tools/dynamic-network-architectures.git
+opencv-python-headless>=4.6.0.66
+pandas>=1.4.4
+tifffile>=2022.8.12
+scikit-image>=0.19.3
+scikit-learn>=1.1.2
+scipy>=1.9.1
+imagecodecs>=2022.8.8
+imageio>=2.21.3
+git+https://github.com/MIC-DKFZ/dynamic-network-architectures.git
+git+https://github.com/MIC-DKFZ/batchgenerators.git

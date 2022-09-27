@@ -16,12 +16,13 @@ Similar frameworks are available for [semantic segmentation](https://github.com/
 
 For reproducing our model training you need to place the ```splits.json``` in the data directory and then run all 5 folds:
 ```
-python main.py ResNet34 --data AcevedoMatek --num_classes 11 --augmentation bg --scheduler CosineAnneal --metrics f1 f1_per_class --batch_size 128 --num_workers 12 --epochs 500 --lr 0.1 --sampler weighted_and_random --balanced --random_prob 0.66 --fold 0 --save_model --chpt_name RN34_fold0
+python main.py ResNet34 --data AcevedoMatek --num_classes 11 --augmentation bg --scheduler CosineAnneal --metrics f1 f1_per_class --batch_size 128 --num_workers 32 --epochs 500 --lr 0.1 --sampler weighted_and_random --balanced --random_prob 0.66 --fold 0 --save_model --chpt_name RN34_fold0
 
 ...
 
-python main.py ResNet34 --data AcevedoMatek --num_classes 11 --augmentation bg --scheduler CosineAnneal --metrics f1 f1_per_class --batch_size 128 --num_workers 12 --epochs 500 --lr 0.1 --sampler weighted_and_random --balanced --random_prob 0.66 --fold 4 --save_model --chpt_name RN34_fold4
+python main.py ResNet34 --data AcevedoMatek --num_classes 11 --augmentation bg --scheduler CosineAnneal --metrics f1 f1_per_class --batch_size 128 --num_workers 32 --epochs 500 --lr 0.1 --sampler weighted_and_random --balanced --random_prob 0.66 --fold 4 --save_model --chpt_name RN34_fold4
 ```
+
 For inference run:
 ```
 python predict.py --cp_dir path/to/checkpoint_dir --data_dir path/to/hematology_data --save_dir path/where/to/save/results --set val
